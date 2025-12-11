@@ -1,17 +1,9 @@
 from django.shortcuts import render, redirect
-from rest_framework import generics
 from django.contrib import messages
 from django.views.decorators.csrf import requires_csrf_token, csrf_exempt
 
-from .models import RegisterModel
-from .forms import RegistrationForm
-from .serializers import RegistrationSerializer
-
-# class RegisterUserView(generics.CreateAPIView):
-#     queryset = RegisterModel.objects.all()
-#     serializer_class = RegistrationSerializer
-#     form_class = RegistrationForm
-#     template_name = 'accounts/register.html'
+from ..models import RegisterModel
+from ..forms import RegistrationForm
 
 @csrf_exempt
 def register(request):

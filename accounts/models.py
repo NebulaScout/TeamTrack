@@ -10,7 +10,7 @@ class RegisterModel(models.Model):
        STAKEHOLDER = 'SH', 'Stakeholder'
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    role = models.CharField(max_length=5, choices=RoleEnum.choices, null=True)
+   #  role = models.CharField(max_length=5, choices=RoleEnum.choices, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
