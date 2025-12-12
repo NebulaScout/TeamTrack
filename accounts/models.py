@@ -7,10 +7,9 @@ class RegisterModel(models.Model):
        ADMIN =  'ADMIN', 'Admin'
        PROJECT_MANAGER = 'PM', 'Project Manager'
        DEVELOPER = 'DEV', 'Developer'
-       STAKEHOLDER = 'SH', 'Stakeholder'
+       GUEST = 'GT', 'Guest'
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-   #  role = models.CharField(max_length=5, choices=RoleEnum.choices, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
