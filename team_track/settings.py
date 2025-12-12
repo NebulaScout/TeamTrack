@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django_enum',
 
     'accounts.apps.AccountsConfig',
+    'api.apps.ApiConfig',
 ]
 
 MIDDLEWARE = [
@@ -132,6 +133,7 @@ STATIC_URL = 'static/'
 # STATICFILES_DIRS = [
 #     BASE_DIR / "static",
 # ]
+
 STATIC_ROOT = BASE_DIR / "static"
 
 # Django REST Framework Configuraton

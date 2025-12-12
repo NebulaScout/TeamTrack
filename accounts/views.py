@@ -3,9 +3,7 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import requires_csrf_token, csrf_exempt
 
-from ..models import RegisterModel
-from ..forms import RegistrationForm
-from ..services.registration_service import register_user
+from .forms import RegistrationForm
 
 @csrf_exempt
 def register(request):
@@ -24,7 +22,7 @@ def register(request):
                     "confirm_password": form.cleaned_data['confirm_password']
                 }
             }
-            api_url = f"{request.scheme}://{request.get_host()}/accounts/api/register/"
+            api_url = f"{request.scheme}://{request.get_host()}/api/v1/accounts/register/"
 
             r = requests.post(api_url, json=data)
 
