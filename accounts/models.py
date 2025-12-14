@@ -9,6 +9,7 @@ class RegisterModel(models.Model):
    #     DEVELOPER = 'DEV', 'Developer'
    #     GUEST = 'GT', 'Guest'
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+   #TODO: Make email field unique (check proper migration techniques to prevent data loss)
+    user = models.OneToOneField(User, on_delete=models.CASCADE) 
     created_at = models.DateTimeField(auto_now_add=True)
     
