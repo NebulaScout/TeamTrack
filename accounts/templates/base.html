@@ -18,12 +18,9 @@
       <nav>
         <ul>
           <li><a href="{% url 'home' %}">Home</a></li>
-          {% comment %}
-          <!-- <li><a href="{% url 'posts' %}">Blog Posts</a></li> -->
-          {% endcomment %} {% comment %}
-          <li><a href="{% url 'login' %}">Login</a></li>
-          {% endcomment %}
           <li><a href="{% url 'register' %}">Register</a></li>
+          <li><a href="{% url 'login' %}">Login</a></li>
+          <li><a href="{% url 'user_profile' %}">Profile</a></li>
         </ul>
       </nav>
     </header>

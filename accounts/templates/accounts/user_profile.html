@@ -1,0 +1,34 @@
+{% extends "base.html" %} {%block content%}
+<h1>User Profile</h1>
+
+<div>
+  {%for message in messages%} {%if message.tags == 'error'%}
+
+  <div class="alert alert-danger" role="alert">{{message}}</div>
+  {%else%}
+  <div class="alert alert-success" role="alert">{{message}}</div>
+  {%endif%} {%endfor%}
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th scope="col">Email</th>
+      <th scope="col">First Name</th>
+      <th scope="col">Last Name</th>
+      <th scope="col">Username</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in user_data %}
+    <tr>
+      <th scope="row">{{user.email}}</th>
+      <td>{{user.first_name}}</td>
+      <td>{{user.last_name}}</td>
+      <td>{{user.username}}</td>
+    </tr>
+    {%endfor%}
+  </tbody>
+</table>
+
+{% endblock %}

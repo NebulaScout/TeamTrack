@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
 
-# from .models import RegisterModel
-
 class RegistrationForm(forms.Form):
     username = forms.CharField(max_length=100)
     first_name = forms.CharField(max_length=100)
@@ -20,3 +18,4 @@ class RegistrationForm(forms.Form):
             self.add_error(confirm_passwd, "Passwords do not match")
         
         return cleaned_data
+    

@@ -26,6 +26,7 @@ api/
         ├── __init__.py
         ├── serializers.py    # DRF serializers for accounts
         ├── viewsets.py       # DRF viewsets for accounts
+        ├── permissions.py    # Custom permission classes
         └── urls.py           # Accounts-specific URL routing
 ```
 
@@ -37,6 +38,7 @@ The API uses a hierarchical URL structure:
 /api/                           → Root API endpoint
 /api/v1/                        → Version 1 API
 /api/v1/accounts/register/      → Registration endpoints
+/api/v1/accounts/users/         → User management endpoints
 ```
 
 ### URL Flow
@@ -56,6 +58,7 @@ The API uses a hierarchical URL structure:
 4. **Accounts API** (`api/v1/accounts/urls.py`):
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/accounts/register/` → `RegisterViewSet`
+   - `/api/v1/accounts/users/` → `UserViewSet`
 
 ## Authentication
 
@@ -79,8 +82,7 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 - **Model**: `RegisterModel` (from `accounts` app)
 - **Methods**:
   - `GET` - List all registrations
-  - `POST` - Create new registration
-  <!-- TODO: Restrict access to the rest of the methods -->
+  - `POST` - Create registration
   - `GET /:id/` - Retrieve specific registration
   - `PUT /:id/` - Update registration
   - `PATCH /:id/` - Partial update
@@ -93,6 +95,36 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 3. Calls `register_user()` service from `accounts.services.registration_service`
 4. Creates both `User` and `RegisterModel` instances
 5. Returns created registration data
+
+#### User Management
+
+- **Endpoint**: `/api/v1/accounts/users/`
+- **ViewSet**: `UserViewSet`
+- **Serializer**: `UserSerializer`
+- **Model**: `User` (Django's built-in User model)
+- **Authentication**: JWT (JWTAuthentication)
+- **Permissions**: `UserPermissions`
+- **Methods**:
+  - `GET` - List all users (admin only)
+  - `POST` - Create user (any user)
+  - `GET /:id/` - Retrieve specific user (authenticated users)
+  - `PUT /:id/` - Update user (owner or admin)
+  - `PATCH /:id/` - Partial update (owner or admin)
+  - `DELETE /:id/` - Delete user (admin only)
+
+## Permissions
+
+The API implements custom permission classes to control access:
+
+### UserPermissions
+
+Controls access to user-related endpoints with the following rules:
+
+- **List** (`GET /users/`): Admin only
+- **Create** (`POST /users/`): Any user can register
+- **Retrieve/Update** (`GET/PUT/PATCH /users/:id/`): Authenticated users only
+- **Delete** (`DELETE /users/:id/`): Admin only
+- **Object-level**: Users can only access/modify their own data unless they're staff
 
 ## Versioning Strategy
 
@@ -111,6 +143,8 @@ The API uses **URL-based versioning** (`/api/v1/`, `/api/v2/`, etc.):
 4. **Use ViewSets** with routers for standard CRUD operations
 5. **Version early** - easier to add v1 now than refactor later
 6. **Document endpoints** as they're created
+7. **Implement proper permissions** to secure endpoints
+8. **Use JWT authentication** for protected resources
 
 ## Related Documentation
 
