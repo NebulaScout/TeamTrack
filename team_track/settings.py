@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_enum',
     'rest_framework_simplejwt',
-    # 'python_dotenv',
 
     'accounts.apps.AccountsConfig',
     'api.apps.ApiConfig',
@@ -133,13 +132,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # STATICFILES_DIRS = [
 #     BASE_DIR / "static",
 # ]
 
 STATIC_ROOT = BASE_DIR / "static"
+
+LOGIN_URL = reverse_lazy('login')
+# LOGIN_REDIRECT_URL = reverse_lazy('home')
 
 # Django REST Framework Configuraton
 REST_FRAMEWORK = {
@@ -148,5 +150,6 @@ REST_FRAMEWORK = {
     ),
 }
 
-LOGIN_URL = reverse_lazy('login')
-# LOGIN_REDIRECT_URL = reverse_lazy('home')
+BOOTSTRAP_DATEPICKER_PLUS = {
+    "template_name": "projects/create_project.html",
+}

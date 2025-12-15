@@ -20,3 +20,11 @@ class UserPermissions(permissions.BasePermission):
         specific object if they own it or have administrative privileges,
           preventing unauthorized access to other users': data."""
         return request.user == obj or request.user.is_staff
+    
+class ProjectPermissions(UserPermissions):
+    def has_permission(self, request, view): 
+        if view.action in ['create','list','retrieve', 'update', 'partial_update', 'destroy']: 
+            return bool(request.user.is_authenticated)
+        else:
+            return False   
+

@@ -4,6 +4,6 @@ from rest_framework.routers import DefaultRouter
 from .viewsets import ProjectsViewSet
 
 router = DefaultRouter()
-router.register(r'projects', ProjectsViewSet, basename='team-projects')
+router.register(r'', ProjectsViewSet, basename='team-projects')
 
 urlpatterns = router.urls

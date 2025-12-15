@@ -2,7 +2,7 @@ import requests
 from django.conf import settings
 
 def refresh_access_token(request):
-    """ Refresh access token"""
+    """ Refresh access token on expiry"""
     refresh_token = request.session.get("refresh_token")
 
     if not refresh_token:

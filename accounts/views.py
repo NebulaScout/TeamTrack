@@ -9,8 +9,7 @@ from django.conf import settings
 
 
 from .forms import RegistrationForm
-from .utils.jwt import refresh_access_token
-
+from services.api_client import APIClient
 
 class CustomLoginView(LoginView):
     """Override the django LoginView class to generate JWT tokens"""
@@ -82,31 +81,17 @@ def home(request):
 @login_required
 def user_profile(request):
     """Retrieve user profile info"""
-    api_url = f"{settings.BASE_URL}api/v1/accounts/users/" # Admin endpoint
-    access_token = request.session.get("access_token")
-    print(f"Access token: {access_token}")
+    api = APIClient(request)
 
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    print(f"Header info: {headers}")
     try:
-        response = requests.get(api_url, headers=headers)
+        response = api.get("/api/v1/accounts/users/")
 
         if response.status_code == 401:
-            new_access_token = refresh_access_token(request)
-
-            if not new_access_token:
-                messages.error(request, "Session expired. Please log in again.")
-                return redirect("login")
-
-            headers['Authorization'] = f"Bearer {new_access_token}"
-            response = requests.get(api_url, headers=headers)
-            print(f"Response headers: {response.headers}")
+            messages.error(request, "Session expired. Please log in again.")
+            return redirect("login")
 
         response.raise_for_status()
         user_data = response.json()
-        # print(user_data.is_authenticated and user_data.is_staff)
         print(f"User data: {user_data}")
         return render(request, 'accounts/user_profile.html', {'user_data': user_data})
 
@@ -116,6 +101,11 @@ def user_profile(request):
         messages.error(request, f"Connection error: {e}")
 
     return render(request, 'accounts/user_profile.html')
+
+@login_required
+def logout(request):
+    # TODO: Remove saved tokens on logout
+    return render(request, "base.html")
 
     
 
