@@ -6,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from services.api_client import APIClient
 from .forms import ProjectCreationForm
+from services.project_service import ProjectService
 
 @login_required
 def create_project(request):
@@ -13,28 +14,15 @@ def create_project(request):
         form = ProjectCreationForm(request.POST)
 
         if form.is_valid():
-            data = {
-                "project_name": form.cleaned_data['project_name'],
-                "description":  form.cleaned_data['description'],
-                "start_date":  form.cleaned_data['start_date'].isoformat(),
-                "end_date":  form.cleaned_data['end_date'].isoformat(),
-            }
 
-            api = APIClient(request)
+            ProjectService.create_project(
+                user = request.user,
+                data = form.cleaned_data
+            )
 
-            try:
-                response = api.post("/api/v1/projects/", json=data)
-
-                if response.status_code == 201:
-                    messages.success(request, "Project was created successfully")
-                else:
-                    messages.error(request, f"Failed to create project: {response.text}")
-
-            except requests.exceptions.HTTPError as e:
-                messages.error(request, f"HTTP error occurred: {e}")
-            except requests.exceptions.RequestException as e:
-                messages.error(request, f"Connection error: {e}")
+            messages.success(request, "Project was created successfully")
     else:
-        form = ProjectCreationForm()       
+        form = ProjectCreationForm()     
+        messages.error(request, "Failed to create the project.")  
 
     return render(request, 'projects/create_project.html', {'form': form})

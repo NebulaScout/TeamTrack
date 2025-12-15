@@ -3,9 +3,11 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import requires_csrf_token, csrf_exempt
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import AuthenticationForm
 from django.conf import settings
+from django.contrib.auth import logout as auth_logout
+
 
 
 from .forms import RegistrationForm
@@ -103,9 +105,19 @@ def user_profile(request):
     return render(request, 'accounts/user_profile.html')
 
 @login_required
-def logout(request):
+def logout_view(request):
     # TODO: Remove saved tokens on logout
+    auth_logout(request)
+
     return render(request, "base.html")
+
+# class CustomLogoutView(LogoutView):
+#     """Override the django LoginView class to generate JWT tokens"""
+
+#     template_name = ''
+#     form_class = AuthenticationForm
+
+#     def
 
     
 

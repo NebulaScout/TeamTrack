@@ -4,11 +4,10 @@ from projects.models import ProjectsModel
 from ..accounts.serializers import UserSerializer
 
 class ProjectsSerializer(serializers.ModelSerializer):
-    created_by = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    created_by = UserSerializer(read_only=True)
     class Meta:
         model = ProjectsModel
         fields = '__all__'
-        # exclude = ['created_by']
 
 class ExtendedUserSerializer(UserSerializer):
     """Extend the accounts user serializer to include a user's projects
