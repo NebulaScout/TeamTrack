@@ -50,10 +50,12 @@ INSTALLED_APPS = [
     'django_enum',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    'django_extensions',
 
     'accounts.apps.AccountsConfig',
     'api.apps.ApiConfig',
     'projects.apps.ProjectsConfig',
+    'core.apps.CoreConfig',
 ]
 
 MIDDLEWARE = [

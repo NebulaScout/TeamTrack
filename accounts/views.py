@@ -11,7 +11,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 
 from .forms import RegistrationForm
-from services.api_client import APIClient
+from core.services.api_client import APIClient
 
 class CustomLoginView(LoginView):
     """Override the django LoginView class to generate JWT tokens"""

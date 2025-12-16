@@ -11,3 +11,8 @@ class ProjectsModel(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='projects')
     created_at = models.DateField(auto_now_add=True)
     # updated_at = models.DateTimeField()
+
+    class Meta:
+        permissions = [
+            ("assign_project", "Can assign a project to users"),
+        ]
