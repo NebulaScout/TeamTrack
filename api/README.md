@@ -22,12 +22,15 @@ api/
 └── v1/                  # API Version 1
     ├── __init__.py
     ├── urls.py          # V1 URL routing
-    └── accounts/        # Accounts API endpoints
-        ├── __init__.py
-        ├── serializers.py    # DRF serializers for accounts
-        ├── viewsets.py       # DRF viewsets for accounts
-        ├── permissions.py    # Custom permission classes
-        └── urls.py           # Accounts-specific URL routing
+    ├── accounts/        # Accounts API endpoints
+    │   ├── __init__.py
+    │   ├── serializers.py    # DRF serializers for accounts
+    │   ├── viewsets.py       # DRF viewsets for accounts
+    │   └── urls.py           # Accounts-specific URL routing
+    └── projects/        # Projects API endpoints
+        ├── serializers.py    # DRF serializers for projects
+        ├── viewsets.py       # DRF viewsets for projects
+        └── urls.py           # Projects-specific URL routing
 ```
 
 ## URL Routing
@@ -39,6 +42,7 @@ The API uses a hierarchical URL structure:
 /api/v1/                        → Version 1 API
 /api/v1/accounts/register/      → Registration endpoints
 /api/v1/accounts/users/         → User management endpoints
+/api/v1/projects/               → Project management endpoints
 ```
 
 ### URL Flow
@@ -54,11 +58,18 @@ The API uses a hierarchical URL structure:
 3. **Version 1** (`api/v1/urls.py`):
 
    - Routes `/api/v1/accounts/` to `api.v1.accounts.urls`
+   - Routes `/api/v1/projects/` to `api.v1.projects.urls`
 
 4. **Accounts API** (`api/v1/accounts/urls.py`):
+
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/accounts/register/` → `RegisterViewSet`
    - `/api/v1/accounts/users/` → `UserViewSet`
+
+5. **Projects API** (`api/v1/projects/urls.py`):
+   - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
+   - `/api/v1/projects/` → `ProjectsViewSet` (registered as 'team-projects')
+   - `/api/v1/projects/users/` → `UserViewSet` (extended user data with projects)
 
 ## Authentication
 
@@ -112,6 +123,66 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
   - `PATCH /:id/` - Partial update (owner or admin)
   - `DELETE /:id/` - Delete user (admin only)
 
+### Projects API (`/api/v1/projects/`)
+
+#### Project Management
+
+- **Endpoint**: `/api/v1/projects/`
+- **ViewSet**: `ProjectsViewSet`
+- **Serializer**: `ProjectsSerializer`
+- **Model**: `ProjectsModel` (from `projects` app)
+- **Methods**:
+  - `GET` - List all projects
+  - `POST` - Create project (automatically sets created_by to current user)
+  - `GET /:id/` - Retrieve specific project
+  - `PUT /:id/` - Update project
+  - `PATCH /:id/` - Partial update
+  - `DELETE /:id/` - Delete project
+
+#### Extended User Data
+
+- **Endpoint**: `/api/v1/projects/users/`
+- **ViewSet**: `UserViewSet`
+- **Serializer**: `ExtendedUserSerializer`
+- **Model**: `User` (Django's built-in User model)
+- **Methods**: Full CRUD operations with user data including related projects
+- **Special Feature**: Includes projects relationship to show all projects created by each user
+
+## Serializers
+
+The API implements several serializers for data validation and transformation:
+
+### RegistrationSerializer
+
+Handles user registration with nested user creation:
+
+- Validates registration data
+- Contains nested `UserSerializer` for user account creation
+- Delegates to `register_user()` service for atomic user creation
+
+### UserSerializer
+
+Basic user data serialization:
+
+- Fields: `id`, `username`, `email`, `first_name`, `last_name`
+- Used for user account data in accounts endpoints
+
+### ExtendedUserSerializer
+
+Extended user data with relationships:
+
+- Extends `UserSerializer`
+- Includes `projects` relationship showing all projects created by the user
+- Used in Projects API's user endpoints
+
+### ProjectsSerializer
+
+Handles project data:
+
+- Fields: `id`, `project_name`, `description`, `start_date`, `end_date`, `created_by`, `created_at`
+- Uses `HiddenField` for `created_by` to automatically set from request.user
+- Validates project data against `ProjectsModel`
+
 ## Permissions
 
 The API implements custom permission classes to control access:
@@ -125,6 +196,15 @@ Controls access to user-related endpoints with the following rules:
 - **Retrieve/Update** (`GET/PUT/PATCH /users/:id/`): Authenticated users only
 - **Delete** (`DELETE /users/:id/`): Admin only
 - **Object-level**: Users can only access/modify their own data unless they're staff
+
+### ProjectPermissions
+
+Controls access to project-related endpoints:
+
+- **Extends** `UserPermissions` for base permission logic
+- **All CRUD operations**: Require authentication
+- **Implementation**: Located in `utils/permissions.py`
+- **Usage**: Can be applied to ProjectsViewSet for authenticated-only access
 
 ## Versioning Strategy
 

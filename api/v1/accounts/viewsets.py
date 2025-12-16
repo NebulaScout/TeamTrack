@@ -4,7 +4,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .serializers import RegistrationSerializer, UserSerializer
 from accounts.models import RegisterModel
-from .permissions import UserPermissions
+from utils.permissions import UserPermissions
 
 class RegisterViewSet(viewsets.ModelViewSet):
     queryset = RegisterModel.objects.all()

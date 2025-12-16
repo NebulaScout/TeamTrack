@@ -3,14 +3,15 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import requires_csrf_token, csrf_exempt
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import AuthenticationForm
 from django.conf import settings
+from django.contrib.auth import logout
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 from .forms import RegistrationForm
-from .utils.jwt import refresh_access_token
-
+from services.api_client import APIClient
 
 class CustomLoginView(LoginView):
     """Override the django LoginView class to generate JWT tokens"""
@@ -82,31 +83,17 @@ def home(request):
 @login_required
 def user_profile(request):
     """Retrieve user profile info"""
-    api_url = f"{settings.BASE_URL}api/v1/accounts/users/" # Admin endpoint
-    access_token = request.session.get("access_token")
-    print(f"Access token: {access_token}")
+    api = APIClient(request)
 
-    headers = {
-        "Authorization": f"Bearer {access_token}"
-    }
-    print(f"Header info: {headers}")
     try:
-        response = requests.get(api_url, headers=headers)
+        response = api.get("/api/v1/accounts/users/")
 
         if response.status_code == 401:
-            new_access_token = refresh_access_token(request)
-
-            if not new_access_token:
-                messages.error(request, "Session expired. Please log in again.")
-                return redirect("login")
-
-            headers['Authorization'] = f"Bearer {new_access_token}"
-            response = requests.get(api_url, headers=headers)
-            print(f"Response headers: {response.headers}")
+            messages.error(request, "Session expired. Please log in again.")
+            return redirect("login")
 
         response.raise_for_status()
         user_data = response.json()
-        # print(user_data.is_authenticated and user_data.is_staff)
         print(f"User data: {user_data}")
         return render(request, 'accounts/user_profile.html', {'user_data': user_data})
 
@@ -117,7 +104,31 @@ def user_profile(request):
 
     return render(request, 'accounts/user_profile.html')
 
+@login_required
+def logout_view(request):
+    print(f"Session data: {dict(request.session.items())}")
+    # Blacklist JWT tokens
+    refresh_token = request.session.get('refresh_token')
+    print(f"Refresh token retrieved: {refresh_token}")
+
+    if refresh_token: # check if they exist
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            print("Token blacklisted successfully")
+        except Exception as e:
+            print(f"Error blacklisting token: {type(e).__name__}: {e}")
+
+
+    # Clear django session
+    logout(request)
+    print("Django logout called")
+
+
+
+
     
 
+    return  redirect('login')
         
 

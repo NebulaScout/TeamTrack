@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 
 from accounts.models import RegisterModel
-from accounts.services.registration_service import register_user
+from services.registration_service import register_user
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

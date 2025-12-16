@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Accounts app is a Django application responsible for user authentication, registration, and role management in the TeamTrack project management system. It handles user account creation with role-based assignment and maintains user profiles with role-specific access levels.
+The Accounts app is a Django application responsible for user authentication, registration, and profile management in the TeamTrack project management system. It handles user account creation and maintains user profiles with comprehensive authentication and authorization mechanisms.
 
 ## Features
 
@@ -44,18 +44,13 @@ The Accounts app is a Django application responsible for user authentication, re
 
 ### Role-Based Access Control
 
-The app supports four user roles:
-
-- **Admin (ADMIN)** - Full system access and administration capabilities
-- **Project Manager (PM)** - Project oversight and team management
-- **Developer (DEV)** - Development and task execution
-- **Guest (GT)** - Limited access (previously Stakeholder)
+Role-based access control architecture has been implemented with custom permission classes that define granular access control based on user authentication status and administrative privileges. The system differentiates between regular authenticated users and administrative staff for access to various operations.
 
 ### User Profile Management
 
 - One-to-one relationship between Django User and RegisterModel
-- Automatic role assignment during registration
 - User creation timestamp tracking
+- Profile data retrieval through authenticated API endpoints
 
 ## Database Models
 
@@ -65,6 +60,8 @@ Extended user profile model that links to Django's built-in User model:
 
 - `user` - OneToOneField to Django User model (CASCADE delete)
 - `created_at` - Automatic timestamp of account creation
+
+**Note:** Role enumeration fields are currently commented out in the model. The role management system is under architectural review for future implementation.
 
 ## Views
 
@@ -139,6 +136,41 @@ Service layer for registration business logic:
 - Returns the created RegisterModel
 - Provides centralized registration logic used by both API and web views
 
+## API ViewSets
+
+### `RegisterViewSet`
+
+Located in `api/v1/accounts/viewsets.py`:
+
+- **Base Class:** `viewsets.ModelViewSet`
+- **Queryset:** `RegisterModel.objects.all()`
+- **Serializer:** `RegistrationSerializer`
+- **Purpose:** Handles user registration via REST API
+- **Authentication:** None (allows public registration)
+- **Permissions:** Default ModelViewSet permissions
+
+### `UserViewSet`
+
+Located in `api/v1/accounts/viewsets.py`:
+
+- **Base Class:** `viewsets.ModelViewSet`
+- **Queryset:** `User.objects.all()`
+- **Serializer:** `UserSerializer`
+- **Authentication:** `JWTAuthentication`
+- **Permissions:** `UserPermissions` (custom permission class)
+- **Purpose:** Manages user CRUD operations with role-based access control
+
+### `ProfileViewSet`
+
+Located in `api/v1/accounts/viewsets.py`:
+
+- **Base Class:** `viewsets.ModelViewSet`
+- **Queryset:** `User.objects.all()`
+- **Serializer:** `UserSerializer`
+- **Authentication:** `JWTAuthentication`
+- **Permissions:** `UserPermissions` (custom permission class)
+- **Purpose:** Handles user profile operations with authentication
+
 ## Utilities
 
 ### `utils/jwt.py`
@@ -154,6 +186,47 @@ JWT token management utilities:
 - Returns new access token or `None` on failure
 - Error handling for HTTP and connection errors
 
+### `utils/permissions.py`
+
+Custom permission classes for fine-grained access control:
+
+#### `UserPermissions`
+
+Custom permission class that extends Django REST Framework's `BasePermission`:
+
+- **list**: Restricted to authenticated staff/admin users only
+- **create**: Open to any user (allows registration)
+- **retrieve, update, partial_update**: Requires authentication
+- **destroy**: Restricted to authenticated staff/admin users only
+- **Object-level permissions**: Users can only access/modify their own objects or admin can access any
+
+#### `ProjectPermissions`
+
+Extends `UserPermissions` with project-specific access control:
+
+- **create, list, retrieve, update, partial_update, destroy**: Requires authentication
+- All other actions are denied by default
+
+### `services/api_client.py`
+
+Centralized API client for internal communication:
+
+#### `APIClient` Class
+
+Manages HTTP requests with automatic authentication and token refresh:
+
+- **`__init__(request)`**: Initializes client with request context and base URL
+- **`_get_headers()`**: Builds authorization headers with JWT access token from session
+- **`\_request(method, path, **kwargs)`\*\*: Core request method that:
+  - Constructs full URL from base URL and path
+  - Attaches authorization headers
+  - Handles 401 responses with automatic token refresh
+  - Retries failed requests with refreshed token
+  - Returns response object for caller to handle
+- **HTTP method helpers**: `get()`, `post()`, `put()`, `patch()`, `delete()`
+
+The APIClient eliminates code duplication by centralizing header management and token refresh logic across all web views that communicate with internal APIs.
+
 ### Web Endpoints
 
 - `/` - Home page
@@ -161,6 +234,38 @@ JWT token management utilities:
 - `/login/` - User login with JWT token generation
 - `/logout/` - User logout
 - `/profile/` - User profile view (requires authentication)
+
+### API Endpoints
+
+#### Registration & User Management (`/api/v1/accounts/`)
+
+**RegisterViewSet**
+
+- Handles user registration through REST API
+- Uses `RegistrationSerializer` for data validation
+- Endpoint: `/api/v1/accounts/register/`
+- Queryset: `RegisterModel.objects.all()`
+
+**UserViewSet**
+
+- Manages user CRUD operations
+- JWT authentication required
+- Custom `UserPermissions` for granular access control
+- Endpoint: `/api/v1/accounts/users/`
+- Queryset: `User.objects.all()`
+
+**ProfileViewSet**
+
+- Handles user profile operations
+- JWT authentication required
+- Custom `UserPermissions` for access control
+- Endpoint: `/api/v1/accounts/profile/`
+- Queryset: `User.objects.all()`
+
+#### Token Management (`/api/token/`)
+
+- `/api/token/` - JWT token generation (login)
+- `/api/token/refresh/` - Access token refresh
 
 ## Security Considerations
 
@@ -187,6 +292,22 @@ JWT token management utilities:
 - Internal API communication pattern between web and API layers
 - Token-based API authentication for protected endpoints
 
+## URL Configuration
+
+The accounts app URL patterns are defined in `accounts/urls.py`:
+
+```python
+urlpatterns = [
+    path('', views.home, name='home'),
+    path('register/', views.register, name='register'),
+    path('login/', views.CustomLoginView.as_view(), name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+    path('profile/', views.user_profile, name='user_profile'),
+]
+```
+
+These URLs are included in the main project URL configuration.
+
 ## Technical Stack
 
 - **Backend Framework:** Django
@@ -199,8 +320,11 @@ JWT token management utilities:
 ## Future Enhancements
 
 - Add user profile editing functionality
-- Re-implement role assignment during registration
-- Add role change management
-- Implement user deactivation/deletion
-- Add password reset functionality
+- Implement comprehensive role enumeration system with dynamic role assignment
+- Add role change management capabilities
+- Implement user deactivation/deletion workflows
+- Add password reset functionality with email verification
 - Enhance token security with token blacklisting
+- Add email uniqueness constraint with proper migration handling
+- Implement multi-factor authentication (MFA)
+- Implement audit logging for user actions
