@@ -14,6 +14,7 @@ import environ
 import os
 from pathlib import Path
 from django.urls import reverse_lazy
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_enum',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 
     'accounts.apps.AccountsConfig',
     'api.apps.ApiConfig',
@@ -141,7 +143,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / "static"
 
 LOGIN_URL = reverse_lazy('login')
-# LOGIN_REDIRECT_URL = reverse_lazy('home')
+LOGIN_REDIRECT_URL = reverse_lazy('home')
 
 # Django REST Framework Configuraton
 REST_FRAMEWORK = {
@@ -150,6 +152,9 @@ REST_FRAMEWORK = {
     ),
 }
 
-BOOTSTRAP_DATEPICKER_PLUS = {
-    "template_name": "projects/create_project.html",
+SIMPLE_JWT = {
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
 }

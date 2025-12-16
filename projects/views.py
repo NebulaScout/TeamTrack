@@ -21,8 +21,8 @@ def create_project(request):
             )
 
             messages.success(request, "Project was created successfully")
+            form = ProjectCreationForm()
     else:
         form = ProjectCreationForm()     
-        messages.error(request, "Failed to create the project.")  
 
     return render(request, 'projects/create_project.html', {'form': form})

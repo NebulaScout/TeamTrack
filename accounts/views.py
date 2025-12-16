@@ -6,8 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.auth.forms import AuthenticationForm
 from django.conf import settings
-from django.contrib.auth import logout as auth_logout
-
+from django.contrib.auth import logout
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 from .forms import RegistrationForm
@@ -106,20 +106,29 @@ def user_profile(request):
 
 @login_required
 def logout_view(request):
-    # TODO: Remove saved tokens on logout
-    auth_logout(request)
+    print(f"Session data: {dict(request.session.items())}")
+    # Blacklist JWT tokens
+    refresh_token = request.session.get('refresh_token')
+    print(f"Refresh token retrieved: {refresh_token}")
 
-    return render(request, "base.html")
+    if refresh_token: # check if they exist
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            print("Token blacklisted successfully")
+        except Exception as e:
+            print(f"Error blacklisting token: {type(e).__name__}: {e}")
 
-# class CustomLogoutView(LogoutView):
-#     """Override the django LoginView class to generate JWT tokens"""
 
-#     template_name = ''
-#     form_class = AuthenticationForm
+    # Clear django session
+    logout(request)
+    print("Django logout called")
 
-#     def
+
+
 
     
 
+    return  redirect('login')
         
 
