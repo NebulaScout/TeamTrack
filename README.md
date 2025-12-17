@@ -15,21 +15,33 @@ TeamTrack is built with Django and Django REST Framework, providing both web-bas
 - Secure login/logout functionality
 - User profile management with API integration
 - Automatic token refresh mechanism
+- Role-based permissions for access control
+
+**Project Management**
+
+- Create, update, and manage projects through API
+- Automatic project ownership assignment
+- Project listing and detail views
+- Service layer integration for project operations
+- Authentication required for all project operations
 
 **REST API**
 
 - Versioned API structure (`/api/v1/`)
 - User management endpoints with role-based permissions
+- Project management endpoints with full CRUD operations
 - Registration endpoints
 - JWT token generation and refresh endpoints
 - Custom permission classes for granular access control
+- Extended user data with project relationships
 
 **Architecture**
 
 - Service layer pattern for business logic
 - API-first design with internal HTTP communication
 - Session-based token storage for web views
-- Modular app structure (accounts, api)
+- Modular app structure (accounts, projects, api, core)
+- Centralized service layer in core app
 
 ### Technology Stack
 
@@ -45,6 +57,9 @@ TeamTrack is built with Django and Django REST Framework, providing both web-bas
 TeamTrack/
 ├── accounts/          # User authentication and management
 ├── api/              # RESTful API endpoints (versioned)
+├── projects/         # Project management functionality
+├── core/             # Shared services and utilities
+├── utils/            # Helper functions and permissions
 └── team_track/       # Django project settings
 ```
 
@@ -52,3 +67,4 @@ For detailed documentation on specific components:
 
 - [Accounts App Documentation](accounts/README.md)
 - [API Documentation](api/README.md)
+- [Projects App Documentation](projects/README.md)

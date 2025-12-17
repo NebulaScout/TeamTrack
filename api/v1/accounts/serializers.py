@@ -2,17 +2,22 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 
 from accounts.models import RegisterModel
-from services.registration_service import register_user
+from core.services.registration_service import register_user
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email','password', 'confirm_password']
-
-    
+        fields = ['username', 'first_name', 'last_name', 'email','password', 'confirm_password',
+                  'role']
+        
+    def get_role(self, obj):
+        """Return a users primary role"""
+        group = obj.groups.first()
+        return group.name if group else None
     
 class RegistrationSerializer(serializers.ModelSerializer):
     user = UserSerializer()

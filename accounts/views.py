@@ -3,15 +3,17 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.views.decorators.csrf import requires_csrf_token, csrf_exempt
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth.views import LoginView
 from django.contrib.auth.forms import AuthenticationForm
 from django.conf import settings
 from django.contrib.auth import logout
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth.models import Group
+from rest_framework import status
 
 
 from .forms import RegistrationForm
-from services.api_client import APIClient
+from core.services.api_client import APIClient
 
 class CustomLoginView(LoginView):
     """Override the django LoginView class to generate JWT tokens"""
@@ -67,7 +69,7 @@ def register(request):
 
             r = requests.post(api_url, json=data)
 
-            if r.status_code == 201:
+            if r.status_code == status.HTTP_201_CREATED:
                 messages.success(request, "Account was created successfully")
                 return redirect('login')
             else:
@@ -86,9 +88,9 @@ def user_profile(request):
     api = APIClient(request)
 
     try:
-        response = api.get("/api/v1/accounts/users/")
+        response = api.get("/api/v1/accounts/users/me")
 
-        if response.status_code == 401:
+        if response.status_code == status.HTTP_401_UNAUTHORIZED:
             messages.error(request, "Session expired. Please log in again.")
             return redirect("login")
 
@@ -106,10 +108,8 @@ def user_profile(request):
 
 @login_required
 def logout_view(request):
-    print(f"Session data: {dict(request.session.items())}")
     # Blacklist JWT tokens
     refresh_token = request.session.get('refresh_token')
-    print(f"Refresh token retrieved: {refresh_token}")
 
     if refresh_token: # check if they exist
         try:
@@ -121,14 +121,10 @@ def logout_view(request):
 
 
     # Clear django session
-    logout(request)
-    print("Django logout called")
-
-
-
-
-    
-
+    logout(request)    
     return  redirect('login')
+
+def get_available_roles():
+    return Group.objects.values_list("name", flat=True)
         
 

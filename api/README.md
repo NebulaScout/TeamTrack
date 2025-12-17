@@ -131,13 +131,15 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 - **ViewSet**: `ProjectsViewSet`
 - **Serializer**: `ProjectsSerializer`
 - **Model**: `ProjectsModel` (from `projects` app)
+- **Authentication**: JWT (JWTAuthentication)
+- **Permissions**: `ProjectPermissions`
 - **Methods**:
-  - `GET` - List all projects
-  - `POST` - Create project (automatically sets created_by to current user)
-  - `GET /:id/` - Retrieve specific project
-  - `PUT /:id/` - Update project
-  - `PATCH /:id/` - Partial update
-  - `DELETE /:id/` - Delete project
+  - `GET` - List all projects (authenticated users)
+  - `POST` - Create project (authenticated users, automatically sets created_by to current user)
+  - `GET /:id/` - Retrieve specific project (authenticated users)
+  - `PUT /:id/` - Update project (authenticated users)
+  - `PATCH /:id/` - Partial update (authenticated users)
+  - `DELETE /:id/` - Delete project (authenticated users)
 
 #### Extended User Data
 
@@ -182,6 +184,7 @@ Handles project data:
 - Fields: `id`, `project_name`, `description`, `start_date`, `end_date`, `created_by`, `created_at`
 - Uses `HiddenField` for `created_by` to automatically set from request.user
 - Validates project data against `ProjectsModel`
+- Integrated with `ProjectService` for business logic during project creation
 
 ## Permissions
 
@@ -202,9 +205,9 @@ Controls access to user-related endpoints with the following rules:
 Controls access to project-related endpoints:
 
 - **Extends** `UserPermissions` for base permission logic
-- **All CRUD operations**: Require authentication
+- **All CRUD operations**: Require authentication (list, create, retrieve, update, partial_update, destroy)
 - **Implementation**: Located in `utils/permissions.py`
-- **Usage**: Can be applied to ProjectsViewSet for authenticated-only access
+- **Applied to**: `ProjectsViewSet` for authenticated-only access
 
 ## Versioning Strategy
 

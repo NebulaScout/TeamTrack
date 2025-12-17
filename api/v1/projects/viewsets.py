@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from projects.models import ProjectsModel
 from .serializers import ProjectsSerializer, ExtendedUserSerializer
 from utils.permissions import ProjectPermissions
-from services.project_service import ProjectService
+from core.services.project_service import ProjectService
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     queryset = ProjectsModel.objects.all()
