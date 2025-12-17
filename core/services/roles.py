@@ -44,4 +44,11 @@ def initialize_roles():
             codename__in = perm_codenames
         )
 
+        found = set(permissions.values_list("codename", flat=True))  # Check for available permissions
+        missing = set(perm_codenames) - found # Chaeck for missing permissions
+
+        # Check if a role is missing and fail loudly if true
+        if missing:
+            raise RuntimeError(f"Missing permissions for {role_name}: {missing}")
+
         group.permissions.set(permissions)

@@ -17,17 +17,19 @@
       <th scope="col">First Name</th>
       <th scope="col">Last Name</th>
       <th scope="col">Username</th>
+      <th scope="col">Role</th>
     </tr>
   </thead>
   <tbody>
-    {% for user in user_data %}
+    {% comment %} {% for user in user_data %} {% endcomment %}
     <tr>
-      <th scope="row">{{user.email}}</th>
-      <td>{{user.first_name}}</td>
-      <td>{{user.last_name}}</td>
-      <td>{{user.username}}</td>
+      <th scope="row">{{user_data.email}}</th>
+      <td>{{user_data.first_name}}</td>
+      <td>{{user_data.last_name}}</td>
+      <td>{{user_data.username}}</td>
+      <td>{{user_data.role}}</td>
     </tr>
-    {%endfor%}
+    {% comment %} {%endfor%} {% endcomment %}
   </tbody>
 </table>
 
