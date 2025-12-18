@@ -23,7 +23,7 @@ class UserPermissions(permissions.BasePermission):
     
 class ProjectPermissions(UserPermissions):
     def has_permission(self, request, view): 
-        if view.action in ['create','list','retrieve', 'update', 'partial_update', 'destroy']: 
+        if view.action in ['create','list','retrieve', 'update', 'partial_update', 'destroy', 'add_members']: 
             return bool(request.user.is_authenticated)
         else:
             return False   
