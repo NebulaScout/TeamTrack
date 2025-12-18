@@ -27,7 +27,6 @@ ROLE_PERMISSIONS = {
         "delete_projectsmodel",
         # user_permissions
         "view_user",
-        "add_user",
         # member assignment
         "add_projectmembers",
         "delete_projectmembers",
