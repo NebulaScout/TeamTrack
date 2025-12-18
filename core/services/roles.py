@@ -12,6 +12,11 @@ ROLE_PERMISSIONS = {
         "change_user",
         "delete_user",
         "view_user",
+        # member assignment
+        "add_projectmembers",
+        "delete_projectmembers",
+        "change_projectmembers",
+        "view_projectmembers",        
     ],
     "Project Manager": [
         # project_model_permissions
@@ -22,17 +27,26 @@ ROLE_PERMISSIONS = {
         "delete_projectsmodel",
         # user_permissions
         "view_user",
+        "add_user",
+        # member assignment
+        "add_projectmembers",
+        "delete_projectmembers",
+        "change_projectmembers",
+        "view_projectmembers",
     ],
     "Developer": [
         # project_model_permissions
         "view_projectsmodel",
         # user_permissions
         "view_user",
-        
+        # member assignment
+        "view_projectmembers",        
     ],
     "Guest": [
         # project_model_permissions
         "view_projectsmodel",
+        # member assignment
+        "view_projectmembers",
     ],
 }
 
