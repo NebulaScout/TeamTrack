@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from .serializers import RegistrationSerializer, UserSerializer
 from accounts.models import RegisterModel
-from utils.permissions import UserPermissions
+from core.services.permissions import UserPermissions
 from core.services.group_assignment import set_user_role
 
 class RegisterViewSet(viewsets.ModelViewSet):

@@ -6,14 +6,14 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from projects.models import ProjectsModel, ProjectMembers
-from .serializers import ProjectsSerializer, ExtendedUserSerializer, ProjectMemberSerializer
-from utils.permissions import ProjectPermissions
+from projects.models import ProjectsModel
+from .serializers import ProjectsSerializer, ExtendedUserSerializer, ProjectMemberSerializer, ExtendedProjectsSerializer
+from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     # queryset = ProjectsModel.objects.all()
-    serializer_class = ProjectsSerializer
+    serializer_class = ExtendedProjectsSerializer
     permission_classes = [ProjectPermissions]
     authentication_classes = [JWTAuthentication]
 

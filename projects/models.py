@@ -18,6 +18,7 @@ class ProjectsModel(models.Model):
     class Meta:
         permissions = [
             ("assign_project", "Can assign a project to users"),
+            ("add_members", "Can add a user to a project")
         ]
 
 class ProjectMembers(models.Model):

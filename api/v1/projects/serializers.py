@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from projects.models import ProjectsModel, ProjectMembers
 from ..accounts.serializers import UserSerializer
+from ..tasks.serializers import TaskSerializer
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,13 +16,24 @@ class ProjectsSerializer(serializers.ModelSerializer):
         model = ProjectsModel
         fields = '__all__'
 
+class ExtendedProjectsSerializer(ProjectsSerializer):
+    """Include task info in the project data response"""
+    project_tasks = TaskSerializer(many=True, read_only=True)    
+
+    class Meta(ProjectsSerializer.Meta):
+        fields = ['id', 'project_name', 'description', 'start_date', 'end_date', 
+                  'created_by', 'created_at', 'members', 'project_tasks']
+
+
 class ExtendedUserSerializer(UserSerializer):
     """Extend the accounts user serializer to include a user's projects
     - one-to-many relationship between a user and a project"""
     projects = ProjectsSerializer(source='projects', many=True, read_only=True)
     project_memberships = ProjectMemberSerializer(source='project_memberships', many=True, read_only=True)
+    user_assigned_tasks = TaskSerializer(source='assigned_tasks', many=True, read_only=True)
+    created_tasks = TaskSerializer(many=True, read_only=True)
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ['projects', 'project_memberships']
+        fields = UserSerializer.Meta.fields + ['projects', 'project_memberships', 'assigned_tasks', 'created_tasks']
 
     
