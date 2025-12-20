@@ -9,6 +9,7 @@ from .serializers import RegistrationSerializer, UserSerializer
 from accounts.models import RegisterModel
 from core.services.permissions import UserPermissions
 from core.services.group_assignment import set_user_role
+from ..projects.serializers import ExtendedUserSerializer
 
 class RegisterViewSet(viewsets.ModelViewSet):
     queryset = RegisterModel.objects.all()
@@ -26,7 +27,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['patch'], permission_classes=[IsAdminUser])
     def assign_role(self, request, pk=None):
         """Assing a role to a user"""
         role = request.data.get("role")

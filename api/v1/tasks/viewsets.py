@@ -58,17 +58,17 @@ class TaskViewSet(viewsets.ModelViewSet):
     def assign(self, request, pk=None):
         """Assign a task to a user"""
         task = self.get_object()
-        assigned_to = request.data.get('assigned_to')
+        assigned_to_id = request.data.get('assigned_to')
 
         update_task = TaskService.assign_task(
             task_id=task.id,
-            assigned_to=assigned_to,
+            assigned_to_id=assigned_to_id,
         )
 
         serializer = self.get_serializer(update_task)
         return Response(serializer.data)
     
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['patch'], url_path='status')
     def update_status(self, request, pk=None):
         """Update task status"""
         task = self.get_object()
@@ -82,9 +82,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(update_task)
         return Response(serializer.data)    
     
-    @action(detail=True, methods=['patch'])
+    @action(detail=True, methods=['patch'], url_path='priority')
     def update_priority(self, request, pk=None):
-        """Update task status"""
+        """Update task priority"""
         task = self.get_object()
         new_priority = request.data.get('priority')
 

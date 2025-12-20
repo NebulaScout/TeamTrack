@@ -28,12 +28,12 @@ class ExtendedProjectsSerializer(ProjectsSerializer):
 class ExtendedUserSerializer(UserSerializer):
     """Extend the accounts user serializer to include a user's projects
     - one-to-many relationship between a user and a project"""
-    projects = ProjectsSerializer(source='projects', many=True, read_only=True)
-    project_memberships = ProjectMemberSerializer(source='project_memberships', many=True, read_only=True)
+    projects = ProjectsSerializer(many=True, read_only=True)
+    project_memberships = ProjectMemberSerializer(many=True, read_only=True)
     user_assigned_tasks = TaskSerializer(source='assigned_tasks', many=True, read_only=True)
     created_tasks = TaskSerializer(many=True, read_only=True)
 
     class Meta(UserSerializer.Meta):
-        fields = UserSerializer.Meta.fields + ['projects', 'project_memberships', 'assigned_tasks', 'created_tasks']
+        fields = UserSerializer.Meta.fields + ['projects', 'project_memberships', 'user_assigned_tasks', 'created_tasks']
 
     

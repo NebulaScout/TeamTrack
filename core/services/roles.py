@@ -28,7 +28,6 @@ ROLE_PERMISSIONS = {
         # project_model_permissions
         "add_projectsmodel",
         "change_projectsmodel",
-        "view_projectsmodel",
         # "assign_projectsmodels",
         "delete_projectsmodel",
         "add_projectmembers",
@@ -47,9 +46,8 @@ ROLE_PERMISSIONS = {
     ],
     "Developer": [
         # project_model_permissions
-        "view_projectsmodel",
         # user_permissions
-        "view_user",
+        # "view_user",
         # member assignment
         "view_projectmembers",
         # task permissions  
@@ -58,11 +56,11 @@ ROLE_PERMISSIONS = {
     ],
     "Guest": [
         # project_model_permissions
-        "view_projectsmodel",
+        # "view_projectsmodel",
         # member assignment
-        "view_projectmembers",
+        # "view_projectmembers",
         # task permissions  
-        "view_taskmodel",
+        # "view_taskmodel",
     ],
 }
 

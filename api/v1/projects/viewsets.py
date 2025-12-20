@@ -7,9 +7,10 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
 from projects.models import ProjectsModel
-from .serializers import ProjectsSerializer, ExtendedUserSerializer, ProjectMemberSerializer, ExtendedProjectsSerializer
+from .serializers import ExtendedUserSerializer, ProjectMemberSerializer, ExtendedProjectsSerializer
 from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
+from core.services.permissions import ROLE_PERMISSIONS
 
 class ProjectsViewSet(viewsets.ModelViewSet):
     # queryset = ProjectsModel.objects.all()
@@ -19,6 +20,21 @@ class ProjectsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self): # type: ignore
         user = self.request.user 
+        user_groups = user.groups.values_list('name', flat=True)
+
+        # Check if user has permission to view all projects
+        can_view_all = any(
+            'view_projectsmodel' in ROLE_PERMISSIONS.get(group, [])
+            for group in user_groups
+        )
+
+        # If a user has view_projectsmodel permission, they can view all created projects
+        if can_view_all:
+            return (ProjectsModel.objects
+                    .all()
+                    .distinct()
+                    .prefetch_related('members', 'members__project_member')
+                    .select_related('created_by'))
 
         return (
             ProjectsModel.objects

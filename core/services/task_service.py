@@ -1,5 +1,6 @@
 from tasks.models import TaskModel
 from projects.models import ProjectsModel
+from django.contrib.auth.models import User
 
 class TaskService():
     @staticmethod
@@ -27,10 +28,11 @@ class TaskService():
             return task
     
     @staticmethod
-    def assign_task(*, task_id, assigned_to):
+    def assign_task(*, task_id, assigned_to_id):
         """Assign a task to a user"""
         task = TaskModel.objects.get(id = task_id)
-        task.assigned_to = assigned_to
+        user = User.objects.get(id = assigned_to_id) # get the user
+        task.assigned_to = user
         task.save()
 
         return task

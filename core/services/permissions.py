@@ -132,10 +132,12 @@ class TaskPermissions(permissions.BasePermission):
         permissions_map = {
             "create": "add_taskmodel",
             "update": "change_taskmodel",
-            "partial_update": "change_taskmodel",
             "list": "view_taskmodel",
             "retrieve": "view_taskmodel",
             "destroy": "delete_taskmodel",
+            "update_status": "change_taskmodel",
+            "update_priority": "change_taskmodel",
+            "assign": "change_taskmodel",
         }
 
         required_permission = permissions_map.get(view.action)
@@ -162,6 +164,9 @@ class TaskPermissions(permissions.BasePermission):
             "partial_update": "change_taskmodel",
             "retrieve": "view_taskmodel",
             "destroy": "delete_taskmodel",
+            "update_status": "change_taskmodel",
+            "update_priority": "change_taskmodel",
+            "assign": "change_taskmodel",
         }
 
         required_permissions = permissions_map.get(view.action)
