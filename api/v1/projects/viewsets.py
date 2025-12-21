@@ -1,19 +1,19 @@
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
 from projects.models import ProjectsModel
-from .serializers import ExtendedUserSerializer, ProjectMemberSerializer, ExtendedProjectsSerializer
+from .serializers import ExtendedUserSerializer, ProjectMemberSerializer, ExtendedProjectsSerializer, TaskSerializer
 from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
+from core.services.task_service import TaskService
 from core.services.permissions import ROLE_PERMISSIONS
+from tasks.models import TaskModel
 
 class ProjectsViewSet(viewsets.ModelViewSet):
-    # queryset = ProjectsModel.objects.all()
     serializer_class = ExtendedProjectsSerializer
     permission_classes = [ProjectPermissions]
     authentication_classes = [JWTAuthentication]
@@ -59,6 +59,38 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         output_serializer = self.get_serializer(project)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
         return super().create(request, *args, **kwargs)
+    
+    @action(detail=True, methods=['post', 'get'], url_path='tasks')
+    def tasks(self, request, pk=None):
+        """Handle tasks for a project"""
+
+        # get project id from the url parameter
+        project = self.get_object()
+
+        if request.method == 'POST':
+            # Create a new task
+            serializer = TaskSerializer(data = request.data)
+            serializer.is_valid(raise_exception=True)
+
+            task = TaskService.create_task(
+                user = request.user,
+                project_id= project.id,
+                data = serializer.validated_data
+            )
+
+            # Return serializer response
+            output_serializer = TaskSerializer(task)
+            return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+        
+        else: # GET request
+            # List all tasks for this project
+            tasks = TaskModel.objects.filter(
+                        project=project
+                    ).select_related('created_by', 'assigned_to')
+            
+            serializer = TaskSerializer(tasks, many=True)
+            return Response(serializer.data)
+    
 
     @action(detail=True, methods=['post'], url_path="members")
     def add_members(self, request, pk=None):

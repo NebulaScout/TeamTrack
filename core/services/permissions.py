@@ -80,6 +80,8 @@ class ProjectPermissions(permissions.BasePermission):
             "assign_project": "assign_projectsmodel",
             "destroy": "delete_projectsmodel",
             "add_members": "add_projectmembers",
+            "tasks": "add_taskmodel",
+            "tasks": "view_taskmodel",
         }
 
         required_permission = permissions_map.get(view.action)
@@ -99,7 +101,7 @@ class ProjectPermissions(permissions.BasePermission):
         if obj.created_by == request.user:
             return True
         
-        user_groups = request.user.groups.value_list('name', flat=True)
+        user_groups = request.user.groups.values_list('name', flat=True)
 
         permissions_map = {
             "list": "view_projectsmodel",
@@ -109,6 +111,8 @@ class ProjectPermissions(permissions.BasePermission):
             "assign_project": "assign_projectsmodel",
             "destroy": "delete_projectsmodel",
             "add_members": "add_projectmembers",
+            "tasks": "add_taskmodel",
+            "tasks": "view_taskmodel",
         }
 
         required_permissions = permissions_map.get(view.action)
