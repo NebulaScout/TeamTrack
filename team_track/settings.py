@@ -36,6 +36,8 @@ DEBUG = env.bool("DEBUG") if "DEBUG" in os.environ else False
 BASE_URL = env("BASE_URL")
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
+# TODO: Add security features
+
 
 # Application definition
 
@@ -56,6 +58,7 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'projects.apps.ProjectsConfig',
     'core.apps.CoreConfig',
+    'tasks.apps.TasksConfig',
 ]
 
 MIDDLEWARE = [
