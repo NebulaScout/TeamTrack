@@ -27,10 +27,17 @@ api/
     │   ├── serializers.py    # DRF serializers for accounts
     │   ├── viewsets.py       # DRF viewsets for accounts
     │   └── urls.py           # Accounts-specific URL routing
-    └── projects/        # Projects API endpoints
-        ├── serializers.py    # DRF serializers for projects
-        ├── viewsets.py       # DRF viewsets for projects
-        └── urls.py           # Projects-specific URL routing
+    ├── auth/            # Authentication API endpoints
+    │   ├── viewsets.py       # DRF viewsets for auth
+    │   └── urls.py           # Auth-specific URL routing
+    ├── projects/        # Projects API endpoints
+    │   ├── serializers.py    # DRF serializers for projects
+    │   ├── viewsets.py       # DRF viewsets for projects
+    │   └── urls.py           # Projects-specific URL routing
+    └── tasks/           # Tasks API endpoints
+        ├── serializers.py    # DRF serializers for tasks
+        ├── viewsets.py       # DRF viewsets for tasks
+        └── urls.py           # Tasks-specific URL routing
 ```
 
 ## URL Routing
@@ -42,7 +49,9 @@ The API uses a hierarchical URL structure:
 /api/v1/                        → Version 1 API
 /api/v1/accounts/register/      → Registration endpoints
 /api/v1/accounts/users/         → User management endpoints
+/api/v1/auth/                   → Authentication endpoints
 /api/v1/projects/               → Project management endpoints
+/api/v1/tasks/                  → Task management endpoints
 ```
 
 ### URL Flow
@@ -58,7 +67,9 @@ The API uses a hierarchical URL structure:
 3. **Version 1** (`api/v1/urls.py`):
 
    - Routes `/api/v1/accounts/` to `api.v1.accounts.urls`
+   - Routes `/api/v1/auth/` to `api.v1.auth.urls`
    - Routes `/api/v1/projects/` to `api.v1.projects.urls`
+   - Routes `/api/v1/tasks/` to `api.v1.tasks.urls`
 
 4. **Accounts API** (`api/v1/accounts/urls.py`):
 
@@ -66,10 +77,20 @@ The API uses a hierarchical URL structure:
    - `/api/v1/accounts/register/` → `RegisterViewSet`
    - `/api/v1/accounts/users/` → `UserViewSet`
 
-5. **Projects API** (`api/v1/projects/urls.py`):
+5. **Auth API** (`api/v1/auth/urls.py`):
+
+   - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
+   - `/api/v1/auth/auth/logout/` → `AuthViewSet.logout`
+
+6. **Projects API** (`api/v1/projects/urls.py`):
+
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/projects/` → `ProjectsViewSet` (registered as 'team-projects')
    - `/api/v1/projects/users/` → `UserViewSet` (extended user data with projects)
+
+7. **Tasks API** (`api/v1/tasks/urls.py`):
+   - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
+   - `/api/v1/tasks/` → `TaskViewSet` (registered as 'project_tasks')
 
 ## Authentication
 
@@ -82,6 +103,24 @@ The API uses **JWT (JSON Web Token)** authentication via `djangorestframework-si
 All protected endpoints require the `Authorization: Bearer <token>` header.
 
 ## Current Endpoints
+
+### Auth API (`/api/v1/auth/`)
+
+#### Logout
+
+- **Endpoint**: `/api/v1/auth/auth/logout/`
+- **ViewSet**: `AuthViewSet`
+- **Authentication**: JWT (JWTAuthentication)
+- **Permissions**: `IsAuthenticated`
+- **Methods**:
+  - `POST` - Logout user by blacklisting refresh token
+
+#### Logout Flow
+
+1. Client sends POST request with refresh_token in request body
+2. `AuthViewSet.logout` validates the refresh token
+3. Blacklists the refresh token to revoke access
+4. Returns success message
 
 ### Accounts API (`/api/v1/accounts/`)
 
@@ -150,6 +189,64 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 - **Methods**: Full CRUD operations with user data including related projects
 - **Special Feature**: Includes projects relationship to show all projects created by each user
 
+### Tasks API (`/api/v1/tasks/`)
+
+#### Task Management
+
+- **Endpoint**: `/api/v1/tasks/`
+- **ViewSet**: `TaskViewSet`
+- **Serializer**: `TaskSerializer`
+- **Model**: `TaskModel` (from `tasks` app)
+- **Authentication**: JWT (JWTAuthentication)
+- **Permissions**: `TaskPermissions`
+- **Methods**:
+  - `GET` - List tasks (filtered to tasks created by or assigned to the current user)
+  - `POST` - Create task (automatically sets created_by to current user)
+  - `GET /:id/` - Retrieve specific task
+  - `PUT /:id/` - Update task
+  - `PATCH /:id/` - Partial update
+  - `DELETE /:id/` - Delete task
+
+#### Task Custom Actions
+
+- **Assign Task**: `PATCH /api/v1/tasks/:id/assign/`
+  - Assigns a task to a specific user
+  - Request body: `{"assigned_to": <user_id>}`
+- **Update Status**: `PATCH /api/v1/tasks/:id/status/`
+  - Updates task status
+  - Request body: `{"status": "<status_value>"}`
+- **Update Priority**: `PATCH /api/v1/tasks/:id/priority/`
+  - Updates task priority
+  - Request body: `{"priority": "<priority_value>"}`
+
+#### Task Query Optimization
+
+The `TaskViewSet` uses optimized queries with:
+
+- `prefetch_related('project')` - Reduces database queries for related projects'
+
+- # TaskSerializer
+
+Handles task data:
+
+- Fields: All fields from `TaskModel`
+- Read-only fields: `id`, `created_by`, `created_at`, `project`
+- Validates task data against `TaskModel`
+- Uses `EnumField` for status and priority enumerations
+
+### ExtendedUserSerializer (Tasks)
+
+Extended user data with task relationships:
+
+- Extends `UserSerializer`
+- Includes `user_assigned_tasks` showing all tasks assigned to the user
+- Includes `created_tasks` showing all tasks created by the user
+- Provides comprehensive user activity tracking
+
+##`select_related('created_by')` - Optimizes user lookups
+
+- Filters tasks to only show those created by or assigned to the current user
+
 ## Serializers
 
 The API implements several serializers for data validation and transformation:
@@ -188,7 +285,18 @@ Handles project data:
 
 ## Permissions
 
-The API implements custom permission classes to control access:
+The API implements custom permissions in core/services/permissions.py`
+
+- **Applied to**: `ProjectsViewSet` for authenticated-only access
+
+### TaskPermissions
+
+Controls access to task-related endpoints:
+
+- **All CRUD operations**: Require authentication
+- **Query filtering**: Users can only access tasks they created or are assigned to
+- **Implementation**: Located in `core/services/permissions.py`
+- **Applied to**: `TaskViewSet` for authenticated and filtered
 
 ### UserPermissions
 

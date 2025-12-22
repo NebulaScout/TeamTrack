@@ -3,6 +3,7 @@ from projects.models import ProjectsModel
 from django.contrib.auth.models import User
 
 class TaskService():
+    # TODO: On task creation, set default status and priority
     @staticmethod
     def create_task(*, user, project_id, data):
         """Logic for task creation"""
@@ -18,7 +19,7 @@ class TaskService():
     
     @staticmethod
     def update_task(*, task_id, data):
-        """Update an existing book"""
+        """Update an existing task"""
         task = TaskModel.objects.get(id = task_id)
 
         for key, value in data.items():

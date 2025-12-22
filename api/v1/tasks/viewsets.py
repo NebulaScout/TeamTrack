@@ -53,6 +53,9 @@ class TaskViewSet(viewsets.ModelViewSet):
         output_serializer = self.get_serializer(task)
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
     
+    # TODO: Implement PUT /api/v1/tasks/{task_id} — update a task (e.g., change description, due date)
+    # TODO: GET /api/v1/projects/{project_id}/tasks?status=OPEN&assigned_to=12 - filtering 
+    
 
     @action(detail=True, methods=['patch'])
     def assign(self, request, pk=None):
