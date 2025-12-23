@@ -141,7 +141,9 @@ class TaskPermissions(permissions.BasePermission):
             "destroy": "delete_taskmodel",
             "update_status": "change_taskmodel",
             "update_priority": "change_taskmodel",
-            "assign": "change_taskmodel",
+            "assign": "change_taskmodel", # assign a task to a user
+            "comments": "view_commentmodel", # retrieve comments
+            "comments": "add_commentmodel", # add a comment
         }
 
         required_permission = permissions_map.get(view.action)
@@ -171,6 +173,8 @@ class TaskPermissions(permissions.BasePermission):
             "update_status": "change_taskmodel",
             "update_priority": "change_taskmodel",
             "assign": "change_taskmodel",
+            "comments": "view_commentmodel",
+            "comments": "add_commentmodel",
         }
 
         required_permissions = permissions_map.get(view.action)
@@ -181,3 +185,4 @@ class TaskPermissions(permissions.BasePermission):
             required_permissions in ROLE_PERMISSIONS.get(group, [])
             for group in user_groups
         )
+    

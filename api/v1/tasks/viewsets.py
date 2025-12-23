@@ -4,11 +4,14 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.decorators import action
 
-from .serializers import TaskSerializer
-from tasks.models import TaskModel
+from .serializers import TaskSerializer, CommentSerializer
+from tasks.models import TaskModel, CommentModel
 from core.services.roles import ROLE_PERMISSIONS
 from core.services.permissions import TaskPermissions
-from core.services.task_service import TaskService
+from core.services.task_service import TaskService, CommentService
+
+class CommentViewSet(viewsets.ModelViewSet):
+   pass
 
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
@@ -98,5 +101,36 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(update_task)
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post', 'get'], url_path='comments')
+    def comments(self, request, pk=None):
+        """Handle comments for a task"""
+
+        # get task id from the url parameter
+        task = self.get_object()
+
+        if request.method == 'POST':
+            # Create a new comment
+            serializer = CommentSerializer(data = request.data)
+            serializer.is_valid(raise_exception=True)
+
+            comment = CommentService.create_comment(
+                user = request.user,
+                task= task,
+                data = serializer.validated_data
+            )
+
+            # Return serializer response
+            output_serializer = CommentSerializer(comment)
+            return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+        
+        else: # GET request
+            # List all comments for this task
+            comments = CommentModel.objects.filter(
+                        task=task
+                    ).select_related('author')
+            
+            serializer = CommentSerializer(comments, many=True)
+            return Response(serializer.data)
     
 

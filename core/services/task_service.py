@@ -1,4 +1,4 @@
-from tasks.models import TaskModel
+from tasks.models import TaskModel, CommentModel
 from projects.models import ProjectsModel
 from django.contrib.auth.models import User
 
@@ -55,3 +55,17 @@ class TaskService():
         task.save()
 
         return task
+    
+class CommentService:
+    @staticmethod
+    def create_comment(*, user, task, data):
+        """Logic for comment creation"""
+
+        # Get project instance
+        task = TaskModel.objects.get(id = task.id)
+
+        return CommentModel.objects.create(
+            task = task,
+            author = user,
+            **data,
+        )
