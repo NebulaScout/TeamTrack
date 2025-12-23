@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.decorators import action
 
-from .serializers import TaskSerializer, CommentSerializer
-from tasks.models import TaskModel, CommentModel
+from .serializers import TaskSerializer, CommentSerializer, TaskHistorySerailizer
+from tasks.models import TaskModel, CommentModel, TaskHistoryModel
 from core.services.roles import ROLE_PERMISSIONS
 from core.services.permissions import TaskPermissions
 from core.services.task_service import TaskService, CommentService
@@ -68,6 +68,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         update_task = TaskService.assign_task(
             task_id=task.id,
+            altered_by = request.user,
             assigned_to_id=assigned_to_id,
         )
 
@@ -82,6 +83,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         update_task = TaskService.update_task_status(
             task_id=task.id,
+            user = request.user,
             status = new_status
         )
 
@@ -96,6 +98,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         update_task = TaskService.update_task_priority(
             task_id=task.id,
+            user = request.user,
             priority = new_priority
         )
 
@@ -132,5 +135,18 @@ class TaskViewSet(viewsets.ModelViewSet):
             
             serializer = CommentSerializer(comments, many=True)
             return Response(serializer.data)
+
+    @action(detail=True, methods=['get'], url_path='logs') 
+    def task_logs(self, request, pk=None):
+        """Manage task logs"""
+        task = self.get_object()
+
+        task_history = TaskHistoryModel.objects.all()
+        serializer = TaskHistorySerailizer(task_history, many=True)
+
+        return Response(serializer.data)
+
+
+        
     
 

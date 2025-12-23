@@ -144,6 +144,7 @@ class TaskPermissions(permissions.BasePermission):
             "assign": "change_taskmodel", # assign a task to a user
             "comments": "view_commentmodel", # retrieve comments
             "comments": "add_commentmodel", # add a comment
+            "task_logs":"view_taskhistorymodel", # view task logs
         }
 
         required_permission = permissions_map.get(view.action)
@@ -175,6 +176,7 @@ class TaskPermissions(permissions.BasePermission):
             "assign": "change_taskmodel",
             "comments": "view_commentmodel",
             "comments": "add_commentmodel",
+            "task_logs":"view_taskhistorymodel",
         }
 
         required_permissions = permissions_map.get(view.action)
