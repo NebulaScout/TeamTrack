@@ -94,7 +94,7 @@ class ProjectsViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path="members")
     def add_members(self, request, pk=None):
-        project = self.get_object()
+        project = self.get_object() # get project id
 
         serializer = ProjectMemberSerializer(
             data = request.data,

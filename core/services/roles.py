@@ -23,6 +23,11 @@ ROLE_PERMISSIONS = {
         "view_taskmodel",
         "change_taskmodel",
         "delete_taskmodel",
+        # comment permissions
+        "add_commentmodel",
+        "change_commentmodel",
+        "view_commentmodel",
+        "delete_commentmodel",
     ],
     "Project Manager": [
         # project_model_permissions
@@ -43,6 +48,11 @@ ROLE_PERMISSIONS = {
         "view_taskmodel",
         "change_taskmodel",
         "delete_taskmodel",
+        # comment permissions
+        "add_commentmodel",
+        "change_commentmodel",
+        "view_commentmodel",
+        "delete_commentmodel",
     ],
     "Developer": [
         # project_model_permissions
@@ -53,14 +63,20 @@ ROLE_PERMISSIONS = {
         # task permissions  
         "view_taskmodel",
         "change_taskmodel",
+        # comment permissions
+        "add_commentmodel",
+        "view_commentmodel",
+        "delete_commentmodel",
     ],
     "Guest": [
         # project_model_permissions
-        # "view_projectsmodel",
+        "view_projectsmodel",
         # member assignment
-        # "view_projectmembers",
+        "view_projectmembers",
         # task permissions  
-        # "view_taskmodel",
+        "view_taskmodel",
+        # comment permissions
+        "view_commentmodel",
     ],
 }
 
