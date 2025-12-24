@@ -212,39 +212,36 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 - **Assign Task**: `PATCH /api/v1/tasks/:id/assign/`
   - Assigns a task to a specific user
   - Request body: `{"assigned_to": <user_id>}`
+  - Automatically tracks assignment change in task history
 - **Update Status**: `PATCH /api/v1/tasks/:id/status/`
   - Updates task status
   - Request body: `{"status": "<status_value>"}`
+  - Automatically tracks status change in task history
 - **Update Priority**: `PATCH /api/v1/tasks/:id/priority/`
+
   - Updates task priority
   - Request body: `{"priority": "<priority_value>"}`
+  - Automatically tracks priority change in task history
+
+- **Task Comments**: `/api/v1/tasks/:id/comments/`
+
+  - `POST` - Create comment on task
+  - `GET` - List all comments for task
+  - Request body (POST): `{"content": "<comment_text>"}`
+  - Automatically sets author to current user
+  - Optimized query with `select_related('author')`
+
+- **Task History/Logs**: `GET /api/v1/tasks/:id/logs/`
+  - Retrieves complete change history for a task
+  - Shows all modifications with timestamps and users
+  - Provides full audit trail of task changes
 
 #### Task Query Optimization
 
 The `TaskViewSet` uses optimized queries with:
 
-- `prefetch_related('project')` - Reduces database queries for related projects'
-
-- # TaskSerializer
-
-Handles task data:
-
-- Fields: All fields from `TaskModel`
-- Read-only fields: `id`, `created_by`, `created_at`, `project`
-- Validates task data against `TaskModel`
-- Uses `EnumField` for status and priority enumerations
-
-### ExtendedUserSerializer (Tasks)
-
-Extended user data with task relationships:
-
-- Extends `UserSerializer`
-- Includes `user_assigned_tasks` showing all tasks assigned to the user
-- Includes `created_tasks` showing all tasks created by the user
-- Provides comprehensive user activity tracking
-
-##`select_related('created_by')` - Optimizes user lookups
-
+- `prefetch_related('project')` - Reduces database queries for related projects
+- `select_related('created_by')` - Optimizes user lookups
 - Filters tasks to only show those created by or assigned to the current user
 
 ## Serializers
@@ -283,20 +280,49 @@ Handles project data:
 - Validates project data against `ProjectsModel`
 - Integrated with `ProjectService` for business logic during project creation
 
+### TaskSerializer
+
+Handles task data with nested relationships:
+
+- Fields: All fields from `TaskModel`
+- Read-only fields: `id`, `created_by`, `created_at`, `project`, `comments`, `history`
+- Nested `comments` - All comments associated with the task
+- Nested `history` - Complete change history for the task
+- Validates task data against `TaskModel`
+- Uses `EnumField` for status and priority enumerations
+
+### CommentSerializer
+
+Handles comment data:
+
+- Fields: `id`, `task`, `author`, `content`, `created_at`
+- Read-only fields: `id`, `created_at`, `author`, `task`
+- Validates comment data against `CommentModel`
+- Automatically sets author from request.user
+
+### TaskHistorySerializer
+
+Handles task change history:
+
+- Fields: All fields from `TaskHistoryModel`
+- Read-only fields: `id`, `task`, `changed_by`, `timestamp`
+- Tracks field changes with old and new values
+- Provides audit trail for task modifications
+
+### ExtendedUserSerializer (Tasks)
+
+Extended user data with task relationships:
+
+- Extends `UserSerializer`
+- Includes `user_assigned_tasks` showing all tasks assigned to the user
+- Includes `created_tasks` showing all tasks created by the user
+- Includes `author_of_comment` showing all comments authored by the user
+- Includes `task_changes` showing all task changes made by the user
+- Provides comprehensive user activity tracking
+
 ## Permissions
 
-The API implements custom permissions in core/services/permissions.py`
-
-- **Applied to**: `ProjectsViewSet` for authenticated-only access
-
-### TaskPermissions
-
-Controls access to task-related endpoints:
-
-- **All CRUD operations**: Require authentication
-- **Query filtering**: Users can only access tasks they created or are assigned to
-- **Implementation**: Located in `core/services/permissions.py`
-- **Applied to**: `TaskViewSet` for authenticated and filtered
+The API implements custom permission classes to control access:
 
 ### UserPermissions
 
@@ -314,8 +340,18 @@ Controls access to project-related endpoints:
 
 - **Extends** `UserPermissions` for base permission logic
 - **All CRUD operations**: Require authentication (list, create, retrieve, update, partial_update, destroy)
-- **Implementation**: Located in `utils/permissions.py`
+- **Implementation**: Located in `core/services/permissions.py`
 - **Applied to**: `ProjectsViewSet` for authenticated-only access
+
+### TaskPermissions
+
+Controls access to task-related endpoints:
+
+- **All CRUD operations**: Require authentication
+- **Query filtering**: Users can only access tasks they created or are assigned to
+- **Custom actions**: Assignment, status, priority, comments, and logs require authentication
+- **Implementation**: Located in `core/services/permissions.py`
+- **Applied to**: `TaskViewSet` for authenticated and filtered access
 
 ## Versioning Strategy
 
@@ -330,12 +366,15 @@ The API uses **URL-based versioning** (`/api/v1/`, `/api/v2/`, etc.):
 
 1. **Keep API logic separate** from web views
 2. **Use serializers** for all input validation
-3. **Delegate business logic** to service layers (`accounts/services/`)
+3. **Delegate business logic** to service layers (`core/services/`)
 4. **Use ViewSets** with routers for standard CRUD operations
 5. **Version early** - easier to add v1 now than refactor later
 6. **Document endpoints** as they're created
 7. **Implement proper permissions** to secure endpoints
 8. **Use JWT authentication** for protected resources
+9. **Track changes** automatically through service layer for audit trails
+10. **Use nested serializers** for related data to reduce API calls
+11. **Optimize queries** with prefetch_related and select_related
 
 ## Related Documentation
 

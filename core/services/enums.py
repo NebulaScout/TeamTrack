@@ -11,6 +11,7 @@ class StatusEnum(models.TextChoices):
     DONE = 'DONE', 'done'
 
 class TaskFieldEnum(models.TextChoices):
+    """Fields tracked in task history"""
     STATUS = "status", "Status"
     PRIORITY = "priority", "Priority"
     ASSIGNED_TO = "assigned_to", "Assigned To"
