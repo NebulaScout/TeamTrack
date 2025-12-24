@@ -1,6 +1,8 @@
-from tasks.models import TaskModel, CommentModel
-from projects.models import ProjectsModel
 from django.contrib.auth.models import User
+
+from tasks.models import TaskModel, CommentModel, TaskHistoryModel
+from projects.models import ProjectsModel
+from .enums import TaskFieldEnum
 
 class TaskService():
     # TODO: On task creation, set default status and priority
@@ -18,39 +20,84 @@ class TaskService():
         )
     
     @staticmethod
-    def update_task(*, task_id, data):
+    def update_task(*, user, task_id, data):
         """Update an existing task"""
-        task = TaskModel.objects.get(id = task_id)
+        task = TaskModel.objects.get(id = task_id)        
 
-        for key, value in data.items():
-            setattr(task, key, value)
+        for field, value in data.items():
+            old_value = getattr(task, field)
 
-            task.save()
-            return task
+            # Restrict the fields that contain unnecessary data
+            if field in TaskFieldEnum: 
+                TaskHistoryModel.objects.create(
+                    task = task,
+                    changed_by = user,
+                    field = TaskFieldEnum.value,
+                    old_value = old_value,
+                    new_value = value
+                )
+
+            setattr(task, field, value)
+
+        task.save()
+        return task
     
     @staticmethod
-    def assign_task(*, task_id, assigned_to_id):
+    def assign_task(*, altered_by, task_id, assigned_to_id):
         """Assign a task to a user"""
         task = TaskModel.objects.get(id = task_id)
         user = User.objects.get(id = assigned_to_id) # get the user
+        old_assignee = task.assigned_to
+
+        if old_assignee != user:
+            TaskHistoryModel.objects.create(
+                task = task,
+                changed_by = altered_by,
+                field_changed = TaskFieldEnum.ASSIGNED_TO,
+                old_value = old_assignee,
+                new_value = user
+            )
+
         task.assigned_to = user
         task.save()
 
         return task
     
     @staticmethod
-    def update_task_status(*, task_id, status):
+    def update_task_status(*, user, task_id, status):
         """Update the status of a task"""
         task = TaskModel.objects.get(id = task_id)
+        old_status = task.status
+
+        if old_status != status:
+            TaskHistoryModel.objects.create(
+                task = task,
+                changed_by = user,
+                field_changed = TaskFieldEnum.STATUS,
+                old_value = old_status,
+                new_value = status
+            )
+
         task.status = status
         task.save()
 
         return task
     
     @staticmethod
-    def update_task_priority(*, task_id, priority):
+    def update_task_priority(*, user, task_id, priority):
         """Update the priority of a task"""
         task = TaskModel.objects.get(id = task_id)
+        old_priority = task.priority
+
+        if old_priority != priority:
+            TaskHistoryModel.objects.create(
+                task = task,
+                changed_by = user,
+                field_changed = TaskFieldEnum.PRIORITY,
+                old_value = old_priority,
+                new_value = priority
+            )
+
         task.priority = priority
         task.save()
 

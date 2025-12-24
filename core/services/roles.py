@@ -28,6 +28,8 @@ ROLE_PERMISSIONS = {
         "change_commentmodel",
         "view_commentmodel",
         "delete_commentmodel",
+        # task history permissions
+        "view_taskhistorymodel",
     ],
     "Project Manager": [
         # project_model_permissions
@@ -53,6 +55,8 @@ ROLE_PERMISSIONS = {
         "change_commentmodel",
         "view_commentmodel",
         "delete_commentmodel",
+        # task history permissions
+        "view_taskhistorymodel",
     ],
     "Developer": [
         # project_model_permissions
