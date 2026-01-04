@@ -46,6 +46,14 @@ The Accounts app is a Django application responsible for user authentication, re
 
 Role-based access control architecture has been implemented with custom permission classes that define granular access control based on user authentication status and administrative privileges. The system differentiates between regular authenticated users and administrative staff for access to various operations.
 
+**Role Management Features:**
+
+- Users can be assigned to roles (Admin, Project Manager, Developer, Guest)
+- Admin-only endpoint for assigning roles to users
+- User's primary role exposed in API responses
+- Role assignment via `set_user_role()` service function
+- Roles are managed through Django's built-in Groups system
+
 ### User Profile Management
 
 - One-to-one relationship between Django User and RegisterModel
@@ -114,7 +122,9 @@ Extended user profile model that links to Django's built-in User model:
 
 - Handles User model serialization
 - Write-only password fields for security
-- Fields: username, first_name, last_name, email, password, confirm_password
+- Fields: `id`, `username`, `first_name`, `last_name`, `email`, `password`, `confirm_password`, `role`
+- **Role field**: SerializerMethod that returns the user's primary group/role name
+- Password fields excluded from response output
 
 ### RegistrationSerializer
 
@@ -135,6 +145,18 @@ Service layer for registration business logic:
 - Automatically creates associated RegisterModel instance
 - Returns the created RegisterModel
 - Provides centralized registration logic used by both API and web views
+
+### `group_assignment.py`
+
+Service layer for user role management:
+
+#### `set_user_role(user, role_name)`
+
+- Assigns a user to a specific role/group
+- Clears existing group memberships and sets the new role
+- Raises `RuntimeError` if the specified role doesn't exist
+- Used by the `assign_role` API endpoint
+- Integrates with Django's built-in Groups system
 
 ## API ViewSets
 
@@ -159,6 +181,21 @@ Located in `api/v1/accounts/viewsets.py`:
 - **Authentication:** `JWTAuthentication`
 - **Permissions:** `UserPermissions` (custom permission class)
 - **Purpose:** Manages user CRUD operations with role-based access control
+
+**Custom Actions:**
+
+- **`GET /me/`** - Get current authenticated user's profile
+
+  - Permissions: `IsAuthenticated`
+  - Returns serialized data for the requesting user
+  - Useful for fetching logged-in user's information
+
+- **`PATCH /{id}/assign_role/`** - Assign a role to a user
+  - Permissions: `IsAdminUser` (admin only)
+  - Request body: `{"role": "<role_name>"}`
+  - Available roles: Admin, Project Manager, Developer, Guest
+  - Uses `set_user_role()` service for role assignment
+  - Returns updated user data on success
 
 ### `ProfileViewSet`
 
@@ -253,6 +290,9 @@ The APIClient eliminates code duplication by centralizing header management and 
 - Custom `UserPermissions` for granular access control
 - Endpoint: `/api/v1/accounts/users/`
 - Queryset: `User.objects.all()`
+- **Custom endpoints:**
+  - `GET /api/v1/accounts/users/me/` - Get current user's profile
+  - `PATCH /api/v1/accounts/users/{id}/assign_role/` - Assign role to user (admin only)
 
 **ProfileViewSet**
 
@@ -320,11 +360,11 @@ These URLs are included in the main project URL configuration.
 ## Future Enhancements
 
 - Add user profile editing functionality
-- Implement comprehensive role enumeration system with dynamic role assignment
-- Add role change management capabilities
+- Add role change management capabilities for non-admin users
 - Implement user deactivation/deletion workflows
 - Add password reset functionality with email verification
-- Enhance token security with token blacklisting
+- Enhance token security with additional token blacklisting scenarios
 - Add email uniqueness constraint with proper migration handling
 - Implement multi-factor authentication (MFA)
 - Implement audit logging for user actions
+- Add bulk role assignment functionality
