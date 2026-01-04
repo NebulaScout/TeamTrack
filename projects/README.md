@@ -187,8 +187,24 @@ The projects app follows a service-oriented architecture:
 
 - REST API endpoints in `api/v1/projects/`
 - `ProjectsViewSet` for CRUD operations
-- `ProjectsSerializer` for data validation
+- `ExtendedProjectsSerializer` for data validation with nested member data
+- `ProjectMemberSerializer` for member management
+- `TaskSerializer` for project task operations
 - JWT authentication support
+- Role-based query filtering (users with `view_projectsmodel` see all projects)
+- Optimized queries with `prefetch_related` and `select_related`
+
+**API Endpoints:**
+
+- `GET /api/v1/projects/` - List projects (filtered by ownership/membership or all if permitted)
+- `POST /api/v1/projects/` - Create a new project
+- `GET /api/v1/projects/{id}/` - Retrieve specific project
+- `PUT /api/v1/projects/{id}/` - Update project
+- `PATCH /api/v1/projects/{id}/` - Partial update project
+- `DELETE /api/v1/projects/{id}/` - Delete project
+- `GET /api/v1/projects/{id}/tasks/` - List all tasks for a project
+- `POST /api/v1/projects/{id}/tasks/` - Create a task within the project
+- `POST /api/v1/projects/{id}/members/` - Add a member to the project with a role
 
 **Benefits:**
 
@@ -208,3 +224,7 @@ The projects app follows a service-oriented architecture:
 - Users can only be added once per project (unique_together constraint)
 - Form validation occurs at both form and model levels
 - Custom permissions available for project assignment and member management
+- **Nested task management** available via `/api/v1/projects/{id}/tasks/` endpoint
+- **Member management** available via `/api/v1/projects/{id}/members/` endpoint
+- Users with `view_projectsmodel` permission can view all projects in the system
+- Query optimization prevents N+1 problems with related member and creator data

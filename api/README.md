@@ -168,17 +168,33 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 
 - **Endpoint**: `/api/v1/projects/`
 - **ViewSet**: `ProjectsViewSet`
-- **Serializer**: `ProjectsSerializer`
+- **Serializer**: `ExtendedProjectsSerializer`
 - **Model**: `ProjectsModel` (from `projects` app)
 - **Authentication**: JWT (JWTAuthentication)
 - **Permissions**: `ProjectPermissions`
 - **Methods**:
-  - `GET` - List all projects (authenticated users)
+  - `GET` - List all projects (filtered by ownership/membership, or all if user has `view_projectsmodel` permission)
   - `POST` - Create project (authenticated users, automatically sets created_by to current user)
   - `GET /:id/` - Retrieve specific project (authenticated users)
   - `PUT /:id/` - Update project (authenticated users)
   - `PATCH /:id/` - Partial update (authenticated users)
   - `DELETE /:id/` - Delete project (authenticated users)
+
+#### Project Custom Actions
+
+- **Project Tasks**: `/api/v1/projects/:id/tasks/`
+
+  - `GET` - List all tasks for the project
+  - `POST` - Create a new task within the project
+  - Request body (POST): `{"title": "...", "description": "...", "due_date": "...", ...}`
+  - Automatically sets created_by to current user
+  - Optimized query with `select_related('created_by', 'assigned_to')`
+
+- **Project Members**: `POST /api/v1/projects/:id/members/`
+  - Adds a member to the project with a specific role
+  - Request body: `{"project_member": <user_id>, "role_in_project": "<role>"}`
+  - Available roles: Admin, Project Manager, Developer, Guest
+  - Uses `ProjectMemberSerializer` for validation
 
 #### Extended User Data
 
@@ -263,22 +279,45 @@ Basic user data serialization:
 - Fields: `id`, `username`, `email`, `first_name`, `last_name`
 - Used for user account data in accounts endpoints
 
-### ExtendedUserSerializer
+### ExtendedUserSerializer (Projects)
 
-Extended user data with relationships:
+Extended user data with project relationships:
 
 - Extends `UserSerializer`
-- Includes `projects` relationship showing all projects created by the user
+- Includes `projects` showing all projects created by the user
+- Includes `project_memberships` showing all projects the user is a member of
+- Includes `user_assigned_tasks` showing all tasks assigned to the user
+- Includes `created_tasks` showing all tasks created by the user
 - Used in Projects API's user endpoints
+- Provides comprehensive project and task activity for each user
+
+### ProjectMemberSerializer
+
+Handles project membership data:
+
+- Model: `ProjectMembers`
+- Fields: All fields from `ProjectMembers`
+- Read-only fields: `project` (set automatically from URL)
+- Validates member assignment with role
 
 ### ProjectsSerializer
 
-Handles project data:
+Handles project data with nested members:
 
-- Fields: `id`, `project_name`, `description`, `start_date`, `end_date`, `created_by`, `created_at`
-- Uses `HiddenField` for `created_by` to automatically set from request.user
+- Fields: All fields from `ProjectsModel`
+- Includes nested `created_by` with full user data via `UserSerializer`
+- Includes nested `members` showing all project members via `ProjectMemberSerializer`
 - Validates project data against `ProjectsModel`
 - Integrated with `ProjectService` for business logic during project creation
+
+### ExtendedProjectsSerializer
+
+Extends `ProjectsSerializer` with task data:
+
+- Fields: `id`, `project_name`, `description`, `start_date`, `end_date`, `created_by`, `created_at`, `members`, `project_tasks`
+- Includes nested `project_tasks` showing all tasks in the project
+- Used as the default serializer in `ProjectsViewSet`
+- Provides complete project overview with members and tasks
 
 ### TaskSerializer
 

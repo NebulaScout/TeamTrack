@@ -4,9 +4,9 @@
 <h2>Register</h2>
 
 <div>
-  {%for message in messages%} {%if form.errors%}
+  {%for message in messages%} {%if message.tags == 'error'%}
 
-  <div class="alert alert-danger" role="alert">{{form.errors}}</div>
+  <div class="alert alert-danger" role="alert">{{message}}</div>
   {%else%}
   <div class="alert alert-success" role="alert">{{message}}</div>
   {%endif%} {%endfor%}

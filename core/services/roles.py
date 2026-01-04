@@ -35,6 +35,7 @@ ROLE_PERMISSIONS = {
         # project_model_permissions
         "add_projectsmodel",
         "change_projectsmodel",
+        "view_projectsmodel",
         # "assign_projectsmodels",
         "delete_projectsmodel",
         "add_projectmembers",
