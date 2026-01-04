@@ -1,133 +1,204 @@
 # TeamTrack
 
-TeamTrack is a Collaborative Task Scheduling and Tracking System (CTSTS) designed to help software engineering teams organize projects, assign work, monitor progress, and stay aligned.
+A Django-based project management and team collaboration platform with REST API support, JWT authentication, and role-based access control.
 
-## Overview
+## Features
 
-TeamTrack is built with Django and Django REST Framework, providing both web-based views and a RESTful API for managing team collaboration. The application follows a clean architecture with separation between API and web layers, enabling flexible integration with frontend applications while maintaining traditional server-rendered views.
+- **User Authentication**: Secure login/registration with JWT token-based authentication
+- **Project Management**: Create and manage projects with team members
+- **Task Management**: Create, assign, and track tasks within projects
+- **Role-Based Access Control**: Configurable roles and permissions
+- **REST API**: Full-featured API (v1) for integration with other services
 
-### Current Features
+## Tech Stack
 
-**User Authentication & Management**
+- **Backend**: Django 5.2, Django REST Framework
+- **Database**: MySQL
+- **Authentication**: JWT (Simple JWT)
+- **Environment Management**: django-environ
 
-- JWT-based authentication with access and refresh tokens
-- User registration with email validation
-- Secure login/logout functionality
-- User profile management with API integration
-- Automatic token refresh mechanism
-- Role-based permissions for access control
+## Prerequisites
 
-**Project Management**
+Before you begin, ensure you have the following installed:
 
-- Create, update, and manage projects through web forms and API
-- Automatic project ownership assignment
-- Project member management with role-based access
-- Automatic "Project Manager" role assignment for project creators
-- Unique project name constraints
-- Custom permissions for project assignment and member management
-- Service layer integration for project operations
-- Authentication required for all project operations
+- Python 3.10 or higher
+- MySQL Server
+- pip (Python package manager)
+- Git
 
-**Task Management**
+## Getting Started
 
-- Create, assign, and track tasks within projects
-- Task status tracking (OPEN, IN_PROGRESS, DONE)
-- Task priority management (LOW, MEDIUM, HIGH)
-- Automatic task filtering by user (created or assigned)
-- Custom API actions for task assignment, status, and priority updates
-- Due date tracking and management
-- Service layer integration for task operations
-- Optimized queries with prefetch and select related
+### 1. Clone the Repository
 
-**REST API**
+```bash
+git clone <repository-url>
+cd TeamTrack
+```
 
-- Versioned API structure (`/api/v1/`)
-- User management endpoints with role-based permissions
-- Project management endpoints with full CRUD operations
-- Task management endpoints with custom actions
-- Authentication endpoints with logout and token blacklisting
-- Registration endpoints
-- JWT token generation, refresh, and verification endpoints
-- Custom permission classes for granular access control
-- Extended user data with project and task relationships
-- User-filtered queries for enhanced security
+### 2. Create a Virtual Environment
 
-**Architecture**
+```bash
+# Create virtual environment
+python -m venv venv
 
-- Service layer pattern for business logic
-- Service-oriented design with reusable business logic
-- API-first design for tasks, hybrid approach for projects
-- Session-based token storage for web views
-- Modular app structure (accounts, projects, tasks, api, core)
-- Centralized service layer in core app
-- Enum-based validation for structured data (status, priority)
-- Optimized database queries for performance
+# Activate virtual environment
+# On Linux/macOS:
+source venv/bin/activate
 
-### Technology Stack
+# On Windows:
+venv\Scripts\activate
+```
 
-- **Backend:** Django 6.0
-- **API Framework:** Django REST Framework
-- **Authentication:** djangorestframework-simplejwt (with token blacklisting)
-- **Database:** Django ORM
-- **Enumerations:** django-enum
-- **Environment Management:** django-environ
+### 3. Install Dependencies
 
-### Project Structure
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configure Environment Variables
+
+Create a `.env` file in the project root directory:
+
+```bash
+touch .env
+```
+
+Add the following environment variables to the `.env` file:
+
+```env
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True # Set to False in production
+BASE_URL=http://127.0.0.1:8000
+
+# Database Configuration
+DB_NAME=teamtrack_db
+DB_USER=your_mysql_username
+DB_PASSWORD=your_mysql_password
+DB_HOST=localhost
+```
+
+> **Note**: Generate a secure `SECRET_KEY` using:
+>
+> ```bash
+> python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+> ```
+
+### 5. Set Up the Database
+
+Create the MySQL database:
+
+```sql
+CREATE DATABASE teamtrack_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Run migrations to create the database tables:
+
+```bash
+python manage.py migrate
+```
+
+### 6. Initialize Roles
+
+Set up default roles and permissions:
+
+```bash
+python manage.py init_roles
+```
+
+### 7. Create a Superuser (Optional)
+
+Create an admin account to access the Django admin panel:
+
+```bash
+python manage.py createsuperuser
+```
+
+### 8. Run the Development Server
+
+```bash
+python manage.py runserver
+```
+
+The application will be available at `http://127.0.0.1:8000`
+
+## Project Structure
 
 ```
 TeamTrack/
-├── accounts/          # User authentication and management
-├── api/              # RESTful API endpoints (versioned)
-│   └── v1/           # API version 1
-│       ├── accounts/ # User and registration API
-│       ├── auth/     # Authentication API (logout)
-│       ├── projects/ # Project management API
-│       └── tasks/    # Task management API
-├── projects/         # Project management functionality
-├── tasks/            # Task management functionality
-├── core/             # Shared services and utilities
-│   ├── services/     # Business logic layer
-│   │   ├── project_service.py
-│   │   ├── task_service.py
-│   │   ├── permissions.py
-│   │   ├── roles.py
-│   │   └── enums.py
-│   └── management/   # Custom management commands
-├── utils/            # Helper functions (JWT)
-├── templates/        # HTML templates
-└── team_track/       # Django project settings
+├── accounts/          # User authentication and profiles
+├── api/               # REST API configuration
+│   └── v1/            # API version 1
+│       ├── accounts/  # Account-related endpoints
+│       ├── auth/      # Authentication endpoints
+│       ├── projects/  # Project endpoints
+│       └── tasks/     # Task endpoints
+├── core/              # Core services and utilities
+│   ├── management/    # Custom management commands
+│   └── services/      # Business logic services
+├── projects/          # Project management module
+├── tasks/             # Task management module
+├── team_track/        # Django project settings
+├── templates/         # HTML templates
+└── utils/             # Utility functions
 ```
 
-### Key Components
+## API Endpoints
 
-**Models:**
+### Authentication
 
-- `User` - Django's built-in user model
-- `RegisterModel` - User registration tracking
-- `ProjectsModel` - Project data and relationships
-- `ProjectMembers` - Project membership with roles
-- `TaskModel` - Task data with status and priority
+| Method | Endpoint              | Description           |
+| ------ | --------------------- | --------------------- |
+| POST   | `/api/token/`         | Obtain JWT token pair |
+| POST   | `/api/token/refresh/` | Refresh access token  |
+| POST   | `/api/token/verify/`  | Verify token validity |
 
-**Services:**
+### API v1
 
-- `ProjectService` - Project creation and member management
-- `TaskService` - Task CRUD, assignment, status, and priority updates
-- `RegistrationService` - User registration workflows
+- `/api/v1/accounts/` - Account management
+- `/api/v1/projects/` - Project CRUD operations
+- `/api/v1/tasks/` - Task CRUD operations
 
-**Enumerations:**
+## Development
 
-- `StatusEnum` - Task status values (OPEN, IN_PROGRESS, DONE)
-- `PriorityEnum` - Task priority values (LOW, MEDIUM, HIGH)
+### Running Tests
 
-**Permissions:**
+```bash
+python manage.py test
+```
 
-- `UserPermissions` - User access control
-- `ProjectPermissions` - Project access control
-- `TaskPermissions` - Task access control with user filtering
+### Making Migrations
 
-For detailed documentation on specific components:
+After modifying models, create and apply migrations:
 
-- [Accounts App Documentation](accounts/README.md)
-- [API Documentation](api/README.md)
-- [Projects App Documentation](projects/README.md)
-- [Tasks App Documentation](tasks/README.md)
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### Code Style
+
+Follow PEP 8 guidelines for Python code style.
+
+## Production Deployment Notes
+
+For production deployment:
+
+1. Set `DEBUG=False` in your `.env` file
+2. Configure a proper `SECRET_KEY`
+3. Set up HTTPS (SSL/TLS certificates)
+4. Configure allowed hosts in `settings.py`
+5. Use a production-grade web server (e.g., Gunicorn + Nginx)
+6. Set up proper database backups
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature-name`)
+3. Commit your changes (`git commit -m 'Add some feature'`)
+4. Push to the branch (`git push origin feature/your-feature-name`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
