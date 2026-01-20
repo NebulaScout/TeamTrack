@@ -64,6 +64,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_extensions',
+    'corsheaders',
+    'drf_spectacular',
 
     'accounts.apps.AccountsConfig',
     'api.apps.ApiConfig',
@@ -73,6 +75,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -80,6 +84,11 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+
+#  Configure allowed origins
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173" # react-vite front-end
 ]
 
 ROOT_URLCONF = 'team_track.urls'
@@ -150,24 +159,36 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = '/static/'
 
-# STATICFILES_DIRS = [
-#     BASE_DIR / "static",
-# ]
 
 STATIC_ROOT = BASE_DIR / "static"
 
-LOGIN_URL = reverse_lazy('login')
-LOGIN_REDIRECT_URL = reverse_lazy('home')
 
 # Django REST Framework Configuraton
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
+    'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
-    'DATE_FORMAT': '%d/%m/%Y',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated'
+    ],
+    'DEFAULT_RENDER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer'
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # 'DATETIME_FORMAT': '%d/%m/%Y %H:%M:%S',
+    # 'DATE_FORMAT': '%d/%m/%Y',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Team Track API',
+    'DESCRIPTION': 
+    '''TeamTrack is a Collaborative Task Scheduling and Tracking System (CTSTS)'
+     designed to help software engineering teams organize projects, assign work,'
+     monitor progress, and stay aligned.''',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    
 }
 
 SIMPLE_JWT = {

@@ -1,6 +1,6 @@
 # TeamTrack
 
-A Django-based project management and team collaboration platform with REST API support, JWT authentication, and role-based access control.
+A Django-based project, task management and team collaboration platform with REST API support, JWT authentication, and role-based access control.
 
 ## Features
 
