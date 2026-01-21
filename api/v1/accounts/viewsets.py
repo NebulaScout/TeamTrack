@@ -1,7 +1,7 @@
 from rest_framework import viewsets, status
 from django.contrib.auth.models import User
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -14,6 +14,7 @@ from ..projects.serializers import ExtendedUserSerializer
 class RegisterViewSet(viewsets.ModelViewSet):
     queryset = RegisterModel.objects.all()
     serializer_class = RegistrationSerializer
+    permission_classes = [AllowAny]
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
