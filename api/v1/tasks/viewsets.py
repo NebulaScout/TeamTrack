@@ -58,6 +58,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     
     # TODO: Implement PUT /api/v1/tasks/{task_id} — update a task (e.g., change description, due date)
     # TODO: GET /api/v1/projects/{project_id}/tasks?status=OPEN&assigned_to=12 - filtering 
+    #! TODO: Get rid of the patches
     
 
     @action(detail=True, methods=['patch'])

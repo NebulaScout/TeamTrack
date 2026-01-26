@@ -7,6 +7,20 @@ from rest_framework_simplejwt.tokens import RefreshToken
 class AuthViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
+    @action(detail=False, methods=["get"], url_path="me")
+    def me(self, request):
+        """Check user/token authentication status.
+        Returns the authenticated user's profile information."""
+        user = request.user
+        group = user.groups.first()
+
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": group.name if group else "Guest"
+        }, status=status.HTTP_200_OK)
+
     @action(detail=False, methods=["post"], url_path="logout")
     def logout(self, request):
         """Create a POST endpoint called /logout/ on this ViewSet, that's not tied to any object ID."""
