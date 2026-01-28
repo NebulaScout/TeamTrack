@@ -31,32 +31,32 @@ class TaskViewSet(viewsets.ModelViewSet):
             .select_related('created_by')
         )
 
-    def create(self, request, *args, **kwargs):
-        """Create a new task using the task service"""
-        serializer = self.get_serializer(data = request.data)
-        serializer.is_valid(raise_exception=True)
+    # def create(self, request, *args, **kwargs):
+    #     """Create a new task using the task service"""
+    #     serializer = self.get_serializer(data = request.data)
+    #     serializer.is_valid(raise_exception=True)
 
-        # Extract project id from the request data
-        project_id = request.data.get('project')
+    #     # Extract project id from the request data
+    #     project_id = request.data.get('project')
 
-        if not project_id:
-            return Response(
-                {"error": f"{project_id} field is required"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    #     if not project_id:
+    #         return Response(
+    #             {"error": f"{project_id} field is required"},
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
 
-        # create task model using the service
-        task = TaskService.create_task(
-            user = request.user,
-            project_id= project_id,
-            data = serializer.validated_data
-        )
+    #     # create task model using the service
+    #     task = TaskService.create_task(
+    #         user = request.user,
+    #         project_id= project_id,
+    #         data = serializer.validated_data
+    #     )
 
-        # Return serializer response
-        output_serializer = self.get_serializer(task)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+    #     # Return serializer response
+    #     output_serializer = self.get_serializer(task)
+    #     return Response(output_serializer.data, status=status.HTTP_201_CREATED)
     
-    # TODO: Implement PUT /api/v1/tasks/{task_id} — update a task (e.g., change description, due date)
+    # TODO: Implement PUT /api/v1/project/{project_id}/tasks/{task_id} — update a task (e.g., change description, due date)
     # TODO: GET /api/v1/projects/{project_id}/tasks?status=OPEN&assigned_to=12 - filtering 
     #! TODO: Get rid of the patches
     

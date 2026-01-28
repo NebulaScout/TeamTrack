@@ -6,8 +6,9 @@ class PriorityEnum(models.TextChoices):
     HIGH =  'HIGH', 'high'
 
 class StatusEnum(models.TextChoices):
-    OPEN = 'OPEN', 'open'
+    TO_DO = 'TO_DO', 'to_do'
     IN_PROGRESS = 'IN_PROGRESS', 'in_progress'
+    IN_REVIEW = 'IN_REVIEW', 'in_review'
     DONE = 'DONE', 'done'
 
 class TaskFieldEnum(models.TextChoices):

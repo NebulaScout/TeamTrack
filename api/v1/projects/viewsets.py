@@ -4,9 +4,15 @@ from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.db.models import Q
+from drf_spectacular.utils import extend_schema
 
 from projects.models import ProjectsModel
-from .serializers import ExtendedUserSerializer, ProjectMemberSerializer, ExtendedProjectsSerializer, TaskSerializer
+from .serializers import (
+    ExtendedUserSerializer,
+    ProjectMemberSerializer,
+    ExtendedProjectsSerializer,
+    TaskSerializer,
+    ProjectsSerializer)
 from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
 from core.services.task_service import TaskService
@@ -14,9 +20,22 @@ from core.services.permissions import ROLE_PERMISSIONS
 from tasks.models import TaskModel
 
 class ProjectsViewSet(viewsets.ModelViewSet):
-    serializer_class = ExtendedProjectsSerializer
     permission_classes = [ProjectPermissions]
     authentication_classes = [JWTAuthentication]
+
+    serializer_classes = {
+        'list': ProjectsSerializer,
+        'retrieve': ProjectsSerializer,
+        'create': ProjectsSerializer,
+        'update': ProjectsSerializer,
+        'partial_update': ProjectsSerializer,
+        # 'tasks': ExtendedProjectsSerializer
+    }
+    default_serializer_class = ProjectsSerializer
+
+    def get_serializer_class(self):
+        """Return the appriopriate serializer based on the action"""
+        return self.serializer_classes.get(self.action, self.default_serializer_class)
 
     def get_queryset(self): # type: ignore
         user = self.request.user 
@@ -60,6 +79,15 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
         return super().create(request, *args, **kwargs)
     
+    @extend_schema(
+            request=TaskSerializer,
+            responses={
+                200: TaskSerializer(many=True),
+                201: TaskSerializer()
+            },
+            methods=['GET', 'POST']
+    )
+    
     @action(detail=True, methods=['post', 'get'], url_path='tasks')
     def tasks(self, request, pk=None):
         """Handle tasks for a project"""
@@ -85,8 +113,8 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         else: # GET request
             # List all tasks for this project
             tasks = TaskModel.objects.filter(
-                        project=project
-                    ).select_related('created_by', 'assigned_to')
+                project=project
+            ).select_related('created_by', 'assigned_to', 'project')
             
             serializer = TaskSerializer(tasks, many=True)
             return Response(serializer.data)

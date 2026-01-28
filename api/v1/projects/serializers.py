@@ -21,9 +21,12 @@ class ExtendedProjectsSerializer(ProjectsSerializer):
     """Include task info in the project data response"""
     project_tasks = TaskSerializer(many=True, read_only=True)    
 
+# 'project_name' removed
     class Meta(ProjectsSerializer.Meta):
         fields = ['id', 'project_name', 'description', 'start_date', 'end_date', 
                   'created_by', 'created_at', 'members', 'project_tasks']
+        read_only_fields = ['id', 'project_name', 'description', 'start_date', 'end_date', 
+                  'created_by', 'created_at', 'members']
 
 
 class ExtendedUserSerializer(UserSerializer):
