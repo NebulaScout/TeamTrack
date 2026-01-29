@@ -4,17 +4,30 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .serializers import RegistrationSerializer, UserSerializer
-from accounts.models import RegisterModel
+from .serializers import RegistrationSerializer, UserSerializer, UserProfileSerializer
+from accounts.models import RegisterModel, UserProfile
 from core.services.permissions import UserPermissions
 from core.services.group_assignment import set_user_role
 from ..projects.serializers import ExtendedUserSerializer
 
-class RegisterViewSet(viewsets.ModelViewSet):
-    queryset = RegisterModel.objects.all()
-    serializer_class = RegistrationSerializer
+class RegisterAPIView(APIView):
     permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegistrationSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user = serializer.save()
+
+            return Response({
+                "message": "Registration Successful",
+                # "user_id": user.id
+            },
+            status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -50,8 +63,8 @@ class UserViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [UserPermissions]
 
