@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'projects.apps.ProjectsConfig',
     'core.apps.CoreConfig',
     'tasks.apps.TasksConfig',
+    'Calendar.apps.CalendarConfig',
 ]
 
 MIDDLEWARE = [
@@ -144,6 +145,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = 'auth.User'
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
@@ -187,7 +190,7 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.UserRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/min',
+        'anon': '50/min',
         'user': '100/min',
     }
 }

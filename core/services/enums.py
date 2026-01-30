@@ -11,6 +11,12 @@ class StatusEnum(models.TextChoices):
     IN_REVIEW = 'IN_REVIEW', 'in_review'
     DONE = 'DONE', 'done'
 
+class EventTypesEnum(models.TextChoices):
+    MEETING =  'meeting', 'Meeting'
+    TASK = 'task', 'Task'
+    DEADLINE = 'deadline', 'Deadline'
+    REMINDER = 'reminder', 'Reminder'
+
 class TaskFieldEnum(models.TextChoices):
     """Fields tracked in task history"""
     STATUS = "status", "Status"

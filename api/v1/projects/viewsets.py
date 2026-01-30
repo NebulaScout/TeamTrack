@@ -22,20 +22,7 @@ from tasks.models import TaskModel
 class ProjectsViewSet(viewsets.ModelViewSet):
     permission_classes = [ProjectPermissions]
     authentication_classes = [JWTAuthentication]
-
-    serializer_classes = {
-        'list': ProjectsSerializer,
-        'retrieve': ProjectsSerializer,
-        'create': ProjectsSerializer,
-        'update': ProjectsSerializer,
-        'partial_update': ProjectsSerializer,
-        # 'tasks': ExtendedProjectsSerializer
-    }
-    default_serializer_class = ProjectsSerializer
-
-    def get_serializer_class(self):
-        """Return the appriopriate serializer based on the action"""
-        return self.serializer_classes.get(self.action, self.default_serializer_class)
+    serializer_class = ProjectsSerializer
 
     def get_queryset(self): # type: ignore
         user = self.request.user 
