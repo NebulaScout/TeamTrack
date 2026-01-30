@@ -188,3 +188,54 @@ class TaskPermissions(permissions.BasePermission):
             for group in user_groups
         )
     
+class CalendarEventPermissions(permissions.BasePermission):
+    """Permission class for calendar based on predefined role permissions"""
+
+    def has_permission(self, request, view): # type: ignore
+        if not request.user.is_authenticated:
+            return False
+        
+        user_groups = request.user.groups.values_list('name', flat=True)
+
+        permissions_map = {
+            "create": "add_calendarevent",
+            "update": "change_calendarevent",
+            "partial_update": "change_calendarevent",
+            "list": "view_calendarevent",
+            "retrieve": "view_calendarevent",
+        }
+
+        required_permission = permissions_map.get(view.action)
+        if not required_permission:
+            return False
+        
+        return any(
+            required_permission in ROLE_PERMISSIONS.get(group, [])
+            for group in user_groups
+        )
+
+    def has_object_permission(self, request, view, obj): # type: ignore
+        """Object-level permissons for calendar
+        Creator of the event always has access, or user must have the appropriate permissions"""
+
+        # Event creator has full access
+        if obj.created_by == request.user:
+            return True
+        
+        user_groups = request.user.groups.values_list('name', flat=True)
+
+        permissions_map = {
+            "list": "view_calendarevent",
+            "retrieve": "view_calendarevent",
+            "update": "change_calendarevent",
+            "partial_update": "change_calendarevent",
+        }
+
+        required_permissions = permissions_map.get(view.action)
+        if not required_permissions:
+            return False
+        
+        return any(
+            required_permissions in ROLE_PERMISSIONS.get(group, [])
+            for group in user_groups
+        )

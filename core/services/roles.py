@@ -30,6 +30,11 @@ ROLE_PERMISSIONS = {
         "delete_commentmodel",
         # task history permissions
         "view_taskhistorymodel",
+        # Calendar event permissions
+        "add_calendarevent",
+        "change_calendarevent",
+        "view_calendarevent",
+        "delete_calendarevent"
     ],
     "Project Manager": [
         # project_model_permissions
@@ -58,6 +63,11 @@ ROLE_PERMISSIONS = {
         "delete_commentmodel",
         # task history permissions
         "view_taskhistorymodel",
+        # Calendar event permissions
+        "add_calendarevent",
+        "change_calendarevent",
+        "view_calendarevent",
+        "delete_calendarevent"
     ],
     "Developer": [
         # project_model_permissions
@@ -72,6 +82,11 @@ ROLE_PERMISSIONS = {
         "add_commentmodel",
         "view_commentmodel",
         "delete_commentmodel",
+        # Calendar event permissions
+        "add_calendarevent",
+        "change_calendarevent",
+        "view_calendarevent",
+        "delete_calendarevent"
     ],
     "Guest": [
         # project_model_permissions
@@ -82,6 +97,9 @@ ROLE_PERMISSIONS = {
         "view_taskmodel",
         # comment permissions
         "view_commentmodel",
+        # Calendar event permissions
+        "view_calendarevent",
+        
     ],
 }
 
