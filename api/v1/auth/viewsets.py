@@ -63,7 +63,7 @@ class AuthViewSet(viewsets.ViewSet):
         methods=['post'], 
         url_path="login", 
         permission_classes=[AllowAny], 
-        throttle_classes=[AnonRateThrottle]
+        # throttle_classes=[AnonRateThrottle]
     )
     def login(self, request):
         """Authenticate user and generate tokens"""
