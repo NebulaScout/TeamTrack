@@ -25,3 +25,10 @@ class TaskFieldEnum(models.TextChoices):
     DUE_DATE = "due_date", "Due Date"
     TITLE = "title", "Title"
     DESCRIPTION = "description", "Description"
+
+class RoleEnum(models.TextChoices):
+    """User roles"""
+    ADMIN = 'Admin', 'Admin'
+    PROJECT_MANAGER = 'Project Manager', 'Project Manager'
+    DEVELOPER = 'Team Member', 'Team Member'
+    GUEST = 'Guest', 'Guest'
