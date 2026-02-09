@@ -84,3 +84,8 @@ class UserListSerializer(serializers.ModelSerializer):
     def get_projects(self, obj):
         # uses the prefetched query
         return [pm.project_id for pm in obj.project_memberships.all()]
+
+class TeamStatsSerializer(serializers.Serializer):
+    total_members = serializers.IntegerField()
+    online_members = serializers.IntegerField()
+    admin_members = serializers.IntegerField()

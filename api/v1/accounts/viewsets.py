@@ -6,8 +6,16 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Count, Prefetch
+from drf_spectacular.utils import extend_schema, OpenApiExample, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 
-from .serializers import RegistrationSerializer, UserSerializer, UserProfileSerializer, UserListSerializer
+from .serializers import (
+    RegistrationSerializer,
+    UserSerializer,
+    UserProfileSerializer,
+    UserListSerializer,
+    TeamStatsSerializer
+)
 from accounts.models import RegisterModel, UserProfile
 from core.services.permissions import UserPermissions
 from core.services.group_assignment import set_user_role
@@ -55,7 +63,10 @@ class TeamUserViewSet(viewsets.ReadOnlyModelViewSet):
         ).annotate(
             task_count=Count('assigned_tasks')
         )
-    
+
+    @extend_schema(
+           responses=TeamStatsSerializer 
+    )
     @action(detail=False, methods=['get'], url_path="stats")
     def team_stats(self, request):
         """Get tam statistics for the current user's projects"""
