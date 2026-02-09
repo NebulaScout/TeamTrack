@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 from accounts.models import RegisterModel, UserProfile
 from core.services.registration_service import register_user
@@ -44,4 +46,41 @@ class RegistrationSerializer(serializers.ModelSerializer):
             email = user_data["email"],
             password = user_data["password"],
         )
+
+class UserListSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    is_online = serializers.SerializerMethodField()
+    task_count = serializers.SerializerMethodField()
+    projects = serializers.SerializerMethodField()
+
+    class Meta: 
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'avatar',
+                  'role', 'is_online', 'task_count', 'projects']
     
+    @extend_schema_field(OpenApiTypes.URI)
+    def get_avatar(self, obj):
+        if hasattr(obj, 'profile') and obj.profile.avatar:
+            request = self.context.get('request')
+            return request.build_absolute_uri(obj.profile.avatar.url) if request else obj.profile.avatar.url
+        return None
+
+    @extend_schema_field(OpenApiTypes.STR)
+    def get_role(self, obj):
+        # Get primary role from first project membership
+        membership = obj.project_memberships.first()
+        return membership.role_in_project if membership else 'Guest'
+    
+    @extend_schema_field(OpenApiTypes.BOOL)
+    def get_is_online(self, obj):
+        return False 
+    
+    @extend_schema_field(OpenApiTypes.INT)
+    def get_task_count(self, obj):
+        return obj.task_count # uses the annotated value
+
+    @extend_schema_field(serializers.ListField(child=serializers.IntegerField()))
+    def get_projects(self, obj):
+        # uses the prefetched query
+        return [pm.project_id for pm in obj.project_memberships.all()]

@@ -10,7 +10,8 @@ class RegisterModel(models.Model):
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(null=True, blank=True)
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, )
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
+    last_seen = models.DateTimeField(auto_now=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

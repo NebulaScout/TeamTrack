@@ -5,8 +5,9 @@ from rest_framework.permissions import IsAdminUser, IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.db.models import Count, Prefetch
 
-from .serializers import RegistrationSerializer, UserSerializer, UserProfileSerializer
+from .serializers import RegistrationSerializer, UserSerializer, UserProfileSerializer, UserListSerializer
 from accounts.models import RegisterModel, UserProfile
 from core.services.permissions import UserPermissions
 from core.services.group_assignment import set_user_role
@@ -30,37 +31,10 @@ class RegisterAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all()   
     serializer_class = UserSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [UserPermissions]
-
-    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
-    def me(self, request):
-        """Get the current authenticated user's profile"""
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['patch'], permission_classes=[IsAdminUser])
-    def assign_role(self, request, pk=None):
-        """Assing a role to a user"""
-        role = request.data.get("role")
-
-        if not role:
-            Response({"error": "Role is required"},
-                     status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = User.objects.get(id=pk)
-            set_user_role(user, role)
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"},
-                            status=status.HTTP_404_NOT_FOUND)
-        except RuntimeError as e:
-            return Response({"error": str(e)},
-                            status=status.HTTP_400_BAD_REQUEST)
 
 class ProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -68,3 +42,40 @@ class ProfileViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
     permission_classes = [UserPermissions]
 
+class TeamUserViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = UserListSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self): # type: ignore
+        return User.objects.select_related(
+            'profile'
+        ).prefetch_related(
+            'project_memberships__project'
+        ).annotate(
+            task_count=Count('assigned_tasks')
+        )
+    
+    @action(detail=False, methods=['get'], url_path="stats")
+    def team_stats(self, request):
+        """Get tam statistics for the current user's projects"""
+        # Get all projects te user is a member of
+        user_projects = request.user.project_memberships.values_list('project_id', flat=True)
+
+        # get all users in those projects
+        team_members = User.objects.filter(
+            project_memberships__project_id__in=user_projects
+        ).distinct()
+
+        # Calculate stats
+        from projects.models import ProjectMembers
+        stats = {
+            "total_members": team_members.count(),
+            "online_members": team_members.filter(profile__last_seen__isnull=False).count(),
+            "project_members": ProjectMembers.objects.filter(
+                project_id__in=user_projects, 
+                role_in_project='Project Manager'
+                ).count()
+        }
+
+        return Response({"data": stats})
