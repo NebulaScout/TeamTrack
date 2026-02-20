@@ -6,7 +6,7 @@ from .enums import RoleEnum
 
 def register_user(username, first_name, last_name, email, password):
     # check if email exists
-    if User.objects.filter(email=email).exists:
+    if User.objects.filter(email=email).exists():
         raise ValueError("A user with this email already exists")
 
     user = User.objects.create_user(

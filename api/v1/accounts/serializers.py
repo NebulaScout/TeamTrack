@@ -38,14 +38,18 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
-       
-        return register_user(
-            first_name = user_data["first_name"],
-            last_name = user_data["last_name"],
-            username = user_data["username"],
-            email = user_data["email"],
-            password = user_data["password"],
-        )
+
+        try:
+
+            return register_user(
+                first_name = user_data["first_name"],
+                last_name = user_data["last_name"],
+                username = user_data["username"],
+                email = user_data["email"],
+                password = user_data["password"],
+            )
+        except ValueError as exc:
+            raise serializers.ValidationError({"user": {"email": [str(exc)]}})
 
 class UserListSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()

@@ -8,26 +8,11 @@ from rest_framework.throttling import AnonRateThrottle
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from rest_framework.exceptions import AuthenticationFailed, ValidationError
 
-
-
+from api.v1.common.responses import ResponseMixin
 from .serializers import LoginResponseSerializer, CustomTokenObtainPairSerializer
 
-class AuthViewSet(viewsets.ViewSet):
+class AuthViewSet(ResponseMixin, viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
-
-    def _success(self, data=None, message=None, status_code=status.HTTP_200_OK):
-        payload = {"success": True}
-        if message:
-            payload["message"] = message
-        if data is not None:
-            payload["data"] = data
-        return Response(payload, status_code)
-    
-    def _error(self, code, message, details=None, status_code=status.HTTP_400_BAD_REQUEST):
-        payload = {"success": False, "error": {"code": code, "message": message}}
-        if details is not None:
-            payload["error"]["details"] = details
-        return Response(payload, status=status_code)
 
     @action(detail=False, methods=["get"], url_path="me", permission_classes=[IsAuthenticated])
     def me(self, request):
