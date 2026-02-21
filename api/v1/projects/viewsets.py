@@ -17,9 +17,11 @@ from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
 from core.services.task_service import TaskService
 from core.services.permissions import ROLE_PERMISSIONS
+from api.v1.common.responses import ResponseMixin
+
 from tasks.models import TaskModel
 
-class ProjectsViewSet(viewsets.ModelViewSet):
+class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
     permission_classes = [ProjectPermissions]
     authentication_classes = [JWTAuthentication]
     serializer_class = ProjectsSerializer
@@ -36,26 +38,30 @@ class ProjectsViewSet(viewsets.ModelViewSet):
 
         # If a user has view_projectsmodel permission, they can view all created projects
         if can_view_all:
-            return (ProjectsModel.objects
-                    .all()
-                    .distinct()
-                    .prefetch_related('members', 'members__project_member')
-                    .select_related('created_by'))
+            projects = ProjectsModel.objects.all().distinct().prefetch_related('members', 'members__project_member').select_related('created_by')
+            return self._success(data=projects, message="Projects retrieved successfully")
 
-        return (
-            ProjectsModel.objects
-            .filter( # Return if:
-                Q(created_by=user) | # project was created by the user or
-                Q(members__project_member=user) # user has been assigned to the project
-            )
-            .distinct() # remove duplicates
-            .prefetch_related('members', 'members__project_member') # retrive related records for better performance
-            .select_related('created_by')
+        return self._success(
+            data = ProjectsModel.objects
+                .filter( # Return if:
+                    Q(created_by=user) | # project was created by the user or
+                    Q(members__project_member=user) # user has been assigned to the project
+                )
+                .distinct() # remove duplicates
+                .prefetch_related('members', 'members__project_member') # retrive related records for better performance
+                .select_related('created_by'),
+            message="Projects retrieved successfully"
         )
     
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+
+        if not serializer.is_valid():
+            return self._error(
+                "INVALID_INPUT",
+                "Error creating project! Please confirm all fields have the necessary data.",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
         
         project = ProjectService.create_project(
            user = request.user,
@@ -63,7 +69,7 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         )
 
         output_serializer = self.get_serializer(project)
-        return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+        return self._success(data=output_serializer.data, message="Project created successfully", status=status.HTTP_201_CREATED)
         return super().create(request, *args, **kwargs)
     
     @extend_schema(
@@ -85,7 +91,14 @@ class ProjectsViewSet(viewsets.ModelViewSet):
         if request.method == 'POST':
             # Create a new task
             serializer = TaskSerializer(data = request.data)
-            serializer.is_valid(raise_exception=True)
+            # serializer.is_valid(raise_exception=True)
+
+            if not serializer.is_valid():
+                return self._error(
+                    "INVALID_INPUT",
+                    "Error creating task! Please confirm all fields have the necessary data.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
             task = TaskService.create_task(
                 user = request.user,
@@ -95,7 +108,7 @@ class ProjectsViewSet(viewsets.ModelViewSet):
 
             # Return serializer response
             output_serializer = TaskSerializer(task)
-            return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+            return self._success(data=output_serializer.data, message="Task created successfully", status=status.HTTP_201_CREATED)
         
         else: # GET request
             # List all tasks for this project
@@ -104,7 +117,7 @@ class ProjectsViewSet(viewsets.ModelViewSet):
             ).select_related('created_by', 'assigned_to', 'project')
             
             serializer = TaskSerializer(tasks, many=True)
-            return Response(serializer.data)
+            return self._success(data=serializer.data, message="Tasks retrieved successfully")
     
 
     @action(detail=True, methods=['post'], url_path="members")
@@ -116,10 +129,16 @@ class ProjectsViewSet(viewsets.ModelViewSet):
             context = {"request": request}
         )
 
-        serializer.is_valid(raise_exception=True)
+        # serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+                return self._error(
+                    "INVALID_INPUT",
+                    "Unable to add member to project!. Please relaod and try again.",
+                    status_code=status.HTTP_400_BAD_REQUEST,
+            )
         serializer.save(project=project)
 
-        return Response(serializer.data, status = status.HTTP_201_CREATED)
+        return self._success(data=serializer.data, message="User added to project.", status = status.HTTP_201_CREATED)
         
 
 class UserViewSet(viewsets.ModelViewSet):

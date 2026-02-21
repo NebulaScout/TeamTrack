@@ -21,17 +21,23 @@ class AuthViewSet(ResponseMixin, viewsets.ViewSet):
         user = request.user
         group = user.groups.first()
 
+        # get avatar url
+        avatar_url = None
+        if hasattr(user, "profile") and user.profile.avatar:
+            avatar_url = request.build_absolute_uri(user.profile.avatar.url)
+
         return self._success({
             "id": user.id,
             "username": user.username,
             "email": user.email,
+            "avatar": avatar_url,
             "role": group.name if group else "Guest"
         })
 
     @action(detail=False, methods=["post"], url_path="logout")
     def logout(self, request):
         """Logout the user and revoke tokens"""
-        refresh_token = request.data.get("refresh_token")
+        refresh_token = request.data.get("refresh_token") #TODO: fix logout issue
 
         if not refresh_token:
            return self._error(

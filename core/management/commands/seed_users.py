@@ -5,7 +5,6 @@ import random
 from django.contrib.auth.models import User
 from accounts.models import UserProfile
 
-# TODO: Add a script that will add images to the user profiles
 
 class Command(BaseCommand):
     help = "Seed the database with fake user data"
