@@ -10,9 +10,10 @@ from projects.models import ProjectsModel
 from .serializers import (
     ExtendedUserSerializer,
     ProjectMemberSerializer,
-    ExtendedProjectsSerializer,
     TaskSerializer,
-    ProjectsSerializer,
+    ProjectListSerializer,
+    ProjectsDetailSerializer,
+    ProjectWriteSerializer,
 )
 from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
@@ -26,7 +27,16 @@ from tasks.models import TaskModel
 class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
     permission_classes = [ProjectPermissions]
     authentication_classes = [JWTAuthentication]
-    serializer_class = ProjectsSerializer
+    # serializer_class = ProjectsSerializer
+
+    def get_serializer_class(self):  # type: ignore
+        """Return different serializers based on the action"""
+        if self.action == "list":
+            return ProjectListSerializer
+        elif self.action == "retrieve":
+            return ProjectsDetailSerializer
+        elif self.action in ["create", "update", "partial_update"]:
+            return ProjectWriteSerializer
 
     def get_queryset(self):  # type: ignore
         user = self.request.user
@@ -43,12 +53,9 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
             return (
                 ProjectsModel.objects.all()
                 .distinct()
-                .prefetch_related("members", "members__project_member")
+                .prefetch_related("members", "members__project_member__profile")
                 .select_related("created_by")
             )
-            # return self._success(
-            #     data=projects, message="Projects retrieved successfully"
-            # )
 
         return (
             ProjectsModel.objects.filter(  # Return if:
@@ -130,8 +137,12 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
 
         else:  # GET request
             # List all tasks for this project
-            tasks = TaskModel.objects.filter(project=project).select_related(
-                "created_by", "assigned_to", "project"
+            tasks = (
+                TaskModel.objects.filter(project=project)
+                .select_related("created_by", "assigned_to", "project")
+                .prefetch_related(
+                    "comments", "comments__author", "history", "history__changed_by"
+                )
             )
 
             serializer = TaskSerializer(tasks, many=True)
