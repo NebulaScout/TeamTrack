@@ -28,7 +28,6 @@ class ProjectWriteSerializer(serializers.ModelSerializer):
             "priority",
             "start_date",
             "end_date",
-            "created_by",
         ]
 
 

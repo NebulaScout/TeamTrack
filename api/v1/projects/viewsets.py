@@ -96,7 +96,7 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
         return self._success(
             data=output_serializer.data,
             message="Project created successfully",
-            status=status.HTTP_201_CREATED,
+            status_code=status.HTTP_201_CREATED,
         )
 
     @extend_schema(
@@ -132,7 +132,7 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
             return self._success(
                 data=output_serializer.data,
                 message="Task created successfully",
-                status=status.HTTP_201_CREATED,
+                status_code=status.HTTP_201_CREATED,
             )
 
         else:  # GET request
