@@ -9,7 +9,7 @@ from core.services.enums import ProjectStatusEnum, PriorityEnum
 
 class ProjectsModel(models.Model):
     project_name = models.CharField(max_length=100, blank=False, unique=True)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     start_date = models.DateField(default=timezone.now, blank=False)
     status = EnumField(ProjectStatusEnum)
     priority = EnumField(PriorityEnum)

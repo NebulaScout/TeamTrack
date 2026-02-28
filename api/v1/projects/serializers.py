@@ -41,6 +41,7 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "id",
             "project_name",
             "description",
+            "start_date",
             "end_date",
             "status",
             "members",
