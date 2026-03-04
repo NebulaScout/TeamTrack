@@ -34,10 +34,16 @@ api/
     │   ├── serializers.py    # DRF serializers for projects
     │   ├── viewsets.py       # DRF viewsets for projects
     │   └── urls.py           # Projects-specific URL routing
-    └── tasks/           # Tasks API endpoints
-        ├── serializers.py    # DRF serializers for tasks
-        ├── viewsets.py       # DRF viewsets for tasks
-        └── urls.py           # Tasks-specific URL routing
+    ├── tasks/           # Tasks API endpoints
+    │   ├── serializers.py    # DRF serializers for tasks
+    │   ├── viewsets.py       # DRF viewsets for tasks
+    │   └── urls.py           # Tasks-specific URL routing
+    ├── Calendar/        # Calendar API endpoints
+    │   ├── serializers.py    # DRF serializers for calendar events
+    │   ├── views.py          # DRF viewsets for calendar events
+    │   └── urls.py           # Calendar-specific URL routing
+    └── common/          # Shared utilities for API responses
+        └── responses.py      # Response mixins for standardized API responses
 ```
 
 ## URL Routing
@@ -52,38 +58,34 @@ The API uses a hierarchical URL structure:
 /api/v1/auth/                   → Authentication endpoints
 /api/v1/projects/               → Project management endpoints
 /api/v1/tasks/                  → Task management endpoints
+/api/v1/calendar/events/        → Calendar event management endpoints
 ```
 
 ### URL Flow
 
 1. **Main URLs** (`team_track/urls.py`):
-
    - Routes `/api/` to `api.urls`
 
 2. **API Root** (`api/urls.py`):
-
    - Routes `/api/v1/` to `api.v1.urls`
 
 3. **Version 1** (`api/v1/urls.py`):
-
    - Routes `/api/v1/accounts/` to `api.v1.accounts.urls`
    - Routes `/api/v1/auth/` to `api.v1.auth.urls`
    - Routes `/api/v1/projects/` to `api.v1.projects.urls`
    - Routes `/api/v1/tasks/` to `api.v1.tasks.urls`
+   - Routes `/api/v1/calendar/events/` to `api.v1.Calendar.urls`
 
 4. **Accounts API** (`api/v1/accounts/urls.py`):
-
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/accounts/register/` → `RegisterViewSet`
    - `/api/v1/accounts/users/` → `UserViewSet`
 
 5. **Auth API** (`api/v1/auth/urls.py`):
-
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/auth/auth/logout/` → `AuthViewSet.logout`
 
 6. **Projects API** (`api/v1/projects/urls.py`):
-
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/projects/` → `ProjectsViewSet` (registered as 'team-projects')
    - `/api/v1/projects/users/` → `UserViewSet` (extended user data with projects)
@@ -91,6 +93,10 @@ The API uses a hierarchical URL structure:
 7. **Tasks API** (`api/v1/tasks/urls.py`):
    - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
    - `/api/v1/tasks/` → `TaskViewSet` (registered as 'project_tasks')
+
+8. **Calendar API** (`api/v1/Calendar/urls.py`):
+   - Uses DRF's `DefaultRouter` to auto-generate REST endpoints
+   - `/api/v1/calendar/events/` → `CalendarEventViewSet` (registered as 'calendar')
 
 ## Authentication
 
@@ -183,7 +189,6 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
 #### Project Custom Actions
 
 - **Project Tasks**: `/api/v1/projects/:id/tasks/`
-
   - `GET` - List all tasks for the project
   - `POST` - Create a new task within the project
   - Request body (POST): `{"title": "...", "description": "...", "due_date": "...", ...}`
@@ -234,13 +239,11 @@ All protected endpoints require the `Authorization: Bearer <token>` header.
   - Request body: `{"status": "<status_value>"}`
   - Automatically tracks status change in task history
 - **Update Priority**: `PATCH /api/v1/tasks/:id/priority/`
-
   - Updates task priority
   - Request body: `{"priority": "<priority_value>"}`
   - Automatically tracks priority change in task history
 
 - **Task Comments**: `/api/v1/tasks/:id/comments/`
-
   - `POST` - Create comment on task
   - `GET` - List all comments for task
   - Request body (POST): `{"content": "<comment_text>"}`
@@ -259,6 +262,44 @@ The `TaskViewSet` uses optimized queries with:
 - `prefetch_related('project')` - Reduces database queries for related projects
 - `select_related('created_by')` - Optimizes user lookups
 - Filters tasks to only show those created by or assigned to the current user
+
+### Calendar API (`/api/v1/calendar/events/`)
+
+#### Calendar Event Management
+
+- **Endpoint**: `/api/v1/calendar/events/`
+- **ViewSet**: `CalendarEventViewSet`
+- **Serializer**: `CalendarEventSerializer`
+- **Model**: `CalendarEvent` (from `Calendar` app)
+- **Authentication**: JWT (JWTAuthentication)
+- **Permissions**: `CalendarEventPermissions`
+- **Methods**:
+  - `GET` - List all calendar events (filtered to events owned by current user)
+  - `POST` - Create calendar event (automatically sets user to current user)
+  - `GET /:id/` - Retrieve specific calendar event
+  - `PUT /:id/` - Update calendar event
+  - `PATCH /:id/` - Partial update calendar event
+  - `DELETE /:id/` - Delete calendar event
+
+#### Calendar Event Fields
+
+- `id` - Auto-generated unique identifier
+- `user` - Owner of the event (automatically set to current user)
+- `title` - Event title (max 255 characters)
+- `description` - Detailed event description (optional)
+- `event_type` - Type of event (Meeting, Deadline, Reminder, etc.)
+- `priority` - Event priority (High, Medium, Low)
+- `event_date` - Date of the event
+- `start_time` - Event start time
+- `end_time` - Event end time (must be after start_time)
+- `created_at` - Timestamp of event creation
+
+#### Calendar Event Validation
+
+The serializer enforces:
+
+- End time must be after start time
+- All required fields must be provided
 
 ## Serializers
 
@@ -348,6 +389,16 @@ Handles task change history:
 - Tracks field changes with old and new values
 - Provides audit trail for task modifications
 
+### CalendarEventSerializer
+
+Handles calendar event data:
+
+- Fields: `id`, `title`, `description`, `event_type`, `priority`, `event_date`, `start_time`, `end_time`, `created_at`
+- Read-only fields: `id`, `created_at`
+- Validates that end_time is after start_time
+- Model: `CalendarEvent` from Calendar app
+- Uses `EnumField` for event_type and priority enumerations
+
 ### ExtendedUserSerializer (Tasks)
 
 Extended user data with task relationships:
@@ -392,6 +443,19 @@ Controls access to task-related endpoints:
 - **Implementation**: Located in `core/services/permissions.py`
 - **Applied to**: `TaskViewSet` for authenticated and filtered access
 
+### CalendarEventPermissions
+
+Controls access to calendar event endpoints:
+
+- **All CRUD operations**: Require authentication
+- **Permission-based access**: Uses Django's permission system with group-based permissions
+  - `add_calendarevent` - Required for creating events
+  - `change_calendarevent` - Required for updating events
+  - `view_calendarevent` - Required for viewing events
+- **Query filtering**: Users can only access their own calendar events
+- **Implementation**: Located in `core/services/permissions.py`
+- **Applied to**: `CalendarEventViewSet` for role-based access control
+
 ## Versioning Strategy
 
 The API uses **URL-based versioning** (`/api/v1/`, `/api/v2/`, etc.):
@@ -400,6 +464,53 @@ The API uses **URL-based versioning** (`/api/v1/`, `/api/v2/`, etc.):
 - Future versions can be added as separate modules (`api/v2/`)
 - Deprecated versions can be maintained alongside newer versions
 - Clients specify version in URL, ensuring backward compatibility
+
+## Common Utilities
+
+### ResponseMixin (`api/v1/common/responses.py`)
+
+Provides standardized response formatting for API endpoints:
+
+#### Success Response
+
+```python
+self._success(data=None, message=None, status_code=status.HTTP_200_OK)
+```
+
+Returns:
+
+```json
+{
+  "success": true,
+  "message": "Optional message",
+  "data": {
+    /* Optional data */
+  }
+}
+```
+
+#### Error Response
+
+```python
+self._error(code, message, details=None, status_code=status.HTTP_400_BAD_REQUEST)
+```
+
+Returns:
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error message",
+    "details": {
+      /* Optional details */
+    }
+  }
+}
+```
+
+**Usage**: Inherit `ResponseMixin` in your ViewSet to use standardized response formats.
 
 ## Best Practices
 
@@ -414,6 +525,8 @@ The API uses **URL-based versioning** (`/api/v1/`, `/api/v2/`, etc.):
 9. **Track changes** automatically through service layer for audit trails
 10. **Use nested serializers** for related data to reduce API calls
 11. **Optimize queries** with prefetch_related and select_related
+12. **Use ResponseMixin** for consistent API response formatting
+13. **Filter querysets** to ensure users only access their own data
 
 ## Related Documentation
 
