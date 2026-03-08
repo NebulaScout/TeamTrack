@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from tasks.models import TaskModel, CommentModel, TaskHistoryModel
+from projects.models import ProjectsModel
 from ..accounts.serializers import UserSerializer
 
 
@@ -13,10 +14,18 @@ class AssignedUserSerializer(serializers.ModelSerializer):
         model = UserSerializer.Meta.model
         fields = ["id", "username", "avatar", "role"]
 
-        def get_role(self, obj):
-            """Return users primary role"""
-            group = obj.groups.first()
-            return group.name if group else None
+    def get_role(self, obj):
+        """Return users primary role"""
+        group = obj.groups.first()
+        return group.name if group else None
+
+
+# TODO: Implement this in the serializers
+# Mini serializer for project info in tasks
+class ProjectInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectsModel
+        fields = ["id", "project_name"]
 
 
 class CommentWriteSerializer(serializers.ModelSerializer):
@@ -42,6 +51,8 @@ class CommentSerializer(serializers.ModelSerializer):
 # Write serializer for creating and updating tasks
 class TaskWriteSerializer(serializers.ModelSerializer):
     # project = serializers.PrimaryKeyRelatedField(read_only=True)
+    project = ProjectInfoSerializer(read_only=True)
+    assigned_to = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = TaskModel
@@ -52,14 +63,14 @@ class TaskWriteSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "due_date",
-            # "project",
+            "project",
         ]
 
 
 class TaskListSerializer(serializers.ModelSerializer):
-    created_by = serializers.PrimaryKeyRelatedField(read_only=True)
-    assigned_to = serializers.PrimaryKeyRelatedField(read_only=True)
-    project = serializers.PrimaryKeyRelatedField(read_only=True)
+    # created_by = serializers.PrimaryKeyRelatedField(read_only=True)
+    # assigned_to = serializers.PrimaryKeyRelatedField(read_only=True)
+    project = ProjectInfoSerializer(read_only=True)
 
     class Meta:
         model = TaskModel
@@ -70,8 +81,8 @@ class TaskListSerializer(serializers.ModelSerializer):
             "status",
             "priority",
             "due_date",
-            "created_by",
-            "assigned_to",
+            # "created_by",
+            # "assigned_to",
             "project",
         ]
 
@@ -80,6 +91,7 @@ class TaskDetailSerializer(serializers.ModelSerializer):
     created_by = AssignedUserSerializer(read_only=True)
     assigned_to = AssignedUserSerializer(read_only=True)
     comments = CommentSerializer(many=True, read_only=True)
+    project = ProjectInfoSerializer(read_only=True)
 
     class Meta:
         model = TaskModel

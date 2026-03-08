@@ -7,7 +7,7 @@ from ..tasks.serializers import TaskSerializer
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="project_member.id", read_only=True)
-    username = serializers.CharField(source="project_memebr.username", read_only=True)
+    username = serializers.CharField(source="project_member.username", read_only=True)
     avatar = serializers.ImageField(
         source="project_member.profile.avatar", read_only=True
     )

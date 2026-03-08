@@ -15,6 +15,16 @@ The tasks app handles all task-related functionality:
 
 ## Models
 
+### Status
+
+A simple model for storing status values:
+
+**Fields:**
+
+- `name`: EnumField using `StatusEnum` (nullable, optional)
+
+**Note:** This model exists but may be deprecated in favor of the enum field directly on TaskModel. Its usage in the current codebase is unclear.
+
 ### TaskModel
 
 The core model for task data storage:
@@ -44,7 +54,7 @@ The core model for task data storage:
 
 Tasks use custom enum types for structured data:
 
-- `StatusEnum`: OPEN, IN_PROGRESS, DONE
+- `StatusEnum`: TO_DO, IN_PROGRESS, IN_REVIEW, DONE
 - `PriorityEnum`: LOW, MEDIUM, HIGH
 
 Both enums are defined in `core.services.enums` using Django's `TextChoices`.
@@ -94,6 +104,22 @@ Changes are tracked for these fields (defined in `TaskFieldEnum`):
 - Due Date
 - Title
 - Description
+
+### TaskAssignment
+
+Tracks task assignments (auxiliary model for managing task-user relationships):
+
+**Fields:**
+
+- `task`: ForeignKey to `TaskModel` with CASCADE deletion (required)
+- `user`: ForeignKey to User model with SET_NULL on deletion (nullable)
+
+**Relationships:**
+
+- Related to `TaskModel` via `task` field
+- Related to `User` model via `user` field
+
+**Note:** This model exists alongside the `assigned_to` field in TaskModel and may be used for future enhancements to support multiple assignees or assignment history.
 
 ## Service Layer
 
@@ -159,6 +185,7 @@ Updates the status of a task with change tracking:
   1. Checks if status is different from current
   2. Creates `TaskHistoryModel` entry if changed
   3. Updates and saves status field
+- **Note:** This method is available but not currently exposed as a dedicated API endpoint. Status updates should be done through the general update endpoints (PUT/PATCH).
 
 #### update_task_priority(user, task_id, priority)
 
@@ -173,6 +200,7 @@ Updates the priority of a task with change tracking:
   1. Checks if priority is different from current
   2. Creates `TaskHistoryModel` entry if changed
   3. Updates and saves priority field
+- **Note:** This method is available but not currently exposed as a dedicated API endpoint. Priority updates should be done through the general update endpoints (PUT/PATCH).
 
 ### CommentService
 
@@ -205,8 +233,6 @@ The tasks app is primarily accessed through REST API endpoints:
 - `PATCH /api/v1/tasks/:id/` - Partial update task
 - `DELETE /api/v1/tasks/:id/` - Delete task
 - `PATCH /api/v1/tasks/:id/assign/` - Assign task to user
-- `PATCH /api/v1/tasks/:id/status/` - Update task status
-- `PATCH /api/v1/tasks/:id/priority/` - Update task priority
 - `POST /api/v1/tasks/:id/comments/` - Create comment on task
 - `GET /api/v1/tasks/:id/comments/` - List all comments for task
 - `GET /api/v1/tasks/:id/logs/` - Retrieve task change history
@@ -215,16 +241,22 @@ The tasks app is primarily accessed through REST API endpoints:
 
 - JWT authentication required for all operations
 - User-filtered queries (only shows tasks created by or assigned to current user)
-- Custom actions for assignment, status, priority updates, comments, and logs
-- Optimized queries with `prefetch_related` and `select_related`
+- Dynamic serializer selection based on action (list, create, update, retrieve)
+- Custom actions for assignment, comments, and change logs
+- Optimized queries with `prefetch_related` and `select_related` based on endpoint
 - Automatic change tracking with history logs
-- Nested comment and history data in task responses
+- Nested comment and user data in task detail responses
 
 **Serializers:**
 
-- `TaskSerializer`: Handles task data validation with nested comments and history
-- `CommentSerializer`: Handles comment data validation and serialization
-- `TaskHistorySerializer`: Handles change history serialization
+- `TaskWriteSerializer`: Handles task creation and update data validation
+- `TaskListSerializer`: Optimized serializer for task list views with minimal related data
+- `TaskDetailSerializer`: Full serializer for single task view with nested comments and user details
+- `TaskHistorySerializer`: Handles change history serialization with user details
+- `CommentSerializer`: Handles comment data validation and serialization with author details
+- `CommentWriteSerializer`: Handles comment creation data validation
+- `ProjectInfoSerializer`: Minimal project information for task responses
+- `AssignedUserSerializer`: Minimal user information with avatar and role
 - `ExtendedUserSerializer`: Includes user's assigned tasks, created tasks, comments, and change history
 
 **Permissions:**
@@ -248,9 +280,9 @@ The tasks app follows a service-oriented, API-first architecture:
 
 - REST API endpoints in `api/v1/tasks/`
 - `TaskViewSet` for CRUD operations and custom actions
-- `TaskSerializer` for data validation
+- Dynamic serializer selection based on action type for optimal performance
 - JWT authentication and custom permissions
-- Optimized database queries for performance
+- Optimized database queries for performance with action-specific prefetching
 
 **Data Layer:**
 
@@ -273,9 +305,10 @@ The tasks app follows a service-oriented, API-first architecture:
 
 Defines task lifecycle states:
 
-- **OPEN**: Task is created but not started
+- **TO_DO**: Task is created but not started
 - **IN_PROGRESS**: Task is currently being worked on
-- **DONE**: Task is completed
+- **IN_REVIEW**: Task is completed and under review
+- **DONE**: Task is completed and approved
 
 ### PriorityEnum
 
@@ -314,4 +347,14 @@ All enums use Django's `TextChoices` for database storage and validation.
 - **Comments** allow team collaboration and discussion on tasks
 - **Task history** provides complete audit trail of all changes
 - History entries preserve user information even if user is deleted (SET_NULL)
-- `updated_at` timestamp automatically tracks last modification time
+- `updated_at` timestamp automatically tracks last modification time- Status and priority updates are now handled through the general update endpoints (PUT/PATCH) rather than dedicated endpoints
+
+## Pending Development
+
+Several enhancements are planned for future releases:
+
+- **Project-based endpoints**: Implement nested task endpoints under projects (e.g., `/api/v1/projects/{project_id}/tasks/`)
+- **Task filtering**: Add query parameter filtering for status and assigned_to fields
+- **ProjectMembers integration**: Migrate `assigned_to` field from generic User to ProjectMembers for better project-scoped assignment
+- **Default values**: Set default status and priority on task creation
+- **TaskAssignment model**: Clarify or implement usage of the TaskAssignment model for advanced assignment features
