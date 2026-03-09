@@ -3,6 +3,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.decorators import action
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from .serializers import (
     TaskHistorySerializer,
@@ -22,6 +24,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     pass
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="id",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.PATH,
+            description="A unique integer value identifying this task.",
+        )
+    ]
+)
 class TaskViewSet(viewsets.ModelViewSet):
     permission_classes = [TaskPermissions]
     authentication_classes = [JWTAuthentication]

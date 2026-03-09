@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
+from drf_spectacular.types import OpenApiTypes
 
 from tasks.models import TaskModel, CommentModel, TaskHistoryModel
 from projects.models import ProjectsModel
@@ -14,6 +16,7 @@ class AssignedUserSerializer(serializers.ModelSerializer):
         model = UserSerializer.Meta.model
         fields = ["id", "username", "avatar", "role"]
 
+    @extend_schema_field(OpenApiTypes.STR)
     def get_role(self, obj):
         """Return users primary role"""
         group = obj.groups.first()
@@ -30,7 +33,7 @@ class ProjectInfoSerializer(serializers.ModelSerializer):
 
 class CommentWriteSerializer(serializers.ModelSerializer):
     class Meta:
-        model: CommentModel
+        model = CommentModel
         fields = ["content"]
 
 
@@ -90,7 +93,7 @@ class TaskListSerializer(serializers.ModelSerializer):
 class TaskDetailSerializer(serializers.ModelSerializer):
     created_by = AssignedUserSerializer(read_only=True)
     assigned_to = AssignedUserSerializer(read_only=True)
-    comments = CommentSerializer(many=True, read_only=True)
+    # comments = CommentSerializer(many=True, read_only=True)
     project = ProjectInfoSerializer(read_only=True)
 
     class Meta:
@@ -104,7 +107,7 @@ class TaskDetailSerializer(serializers.ModelSerializer):
             "due_date",
             "assigned_to",
             "project",
-            "comments",
+            # "comments",
             "created_by",
         ]
 
