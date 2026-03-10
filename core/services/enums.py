@@ -47,3 +47,11 @@ class ProjectStatusEnum(models.TextChoices):
     ACTIVE = "ACTIVE", "active"
     COMPLETED = "COMPLETED", "completed"
     ON_HOLD = "ON_HOLD", "on_hold"
+
+
+class RecurrenceEnums(models.TextChoices):
+    """Calendar recurrence"""
+
+    DAILY = "DAILY", "Daily"
+    WEEKLY = "WEEKLY" "Weekly"
+    MONTHLY = "MONTHLY" "Monthly"
