@@ -1,6 +1,7 @@
 from rest_framework import permissions
 
 from core.services.roles import ROLE_PERMISSIONS
+from projects.models import ProjectMembers
 
 
 class UserPermissions(permissions.BasePermission):
@@ -104,16 +105,55 @@ class ProjectPermissions(permissions.BasePermission):
 
         user_groups = request.user.groups.values_list("name", flat=True)
 
+        # For team management actions, check if user has appropriate role in THIS project
+        if view.action in [
+            "invite_team_member",
+            "remove_team_member",
+            "update_member_role",
+        ]:
+            # Check if user is Admin or Project Manager globally OR in this specific project
+            has_global_permission = any(
+                "add_projectmembers" in ROLE_PERMISSIONS.get(group, [])
+                for group in user_groups
+            )
+
+            if has_global_permission:
+                return True
+
+            # Check project-specific role
+            try:
+                membership = ProjectMembers.objects.get(
+                    project=obj, project_member=request.user
+                )
+                return membership.role_in_project in ["Admin", "Project Manager"]
+            except ProjectMembers.DoesNotExist:
+                return False
+
+        # For viewing team members, any project member can view
+        if view.action in ["list_team_members", "team_stats"]:
+            return ProjectMembers.objects.filter(
+                project=obj, project_member=request.user
+            ).exists() or any(
+                "view_projectmembers" in ROLE_PERMISSIONS.get(group, [])
+                for group in user_groups
+            )
+
+        # For leaving project, any member can leave
+        if view.action == "leave_project":
+            return ProjectMembers.objects.filter(
+                project=obj, project_member=request.user
+            ).exists()
+
         permissions_map = {
             "list": "view_projectsmodel",
             "retrieve": "view_projectsmodel",
             "update": "change_projectsmodel",
             "partial_update": "change_projectsmodel",
-            "assign_project": "assign_projectsmodel",
             "destroy": "delete_projectsmodel",
-            "add_members": "add_projectmembers",
-            "tasks": "add_taskmodel",
-            "tasks": "view_taskmodel",
+            # "assign_project": "assign_projectsmodel",
+            # "add_members": "add_projectmembers",
+            # "tasks": "add_taskmodel",
+            # "tasks": "view_taskmodel",
         }
 
         required_permissions = permissions_map.get(view.action)
