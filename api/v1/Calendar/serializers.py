@@ -153,7 +153,7 @@ class TaskDeadlineSyncSerializer(serializers.ModelSerializer):
             "task",
             "task_title",
             "task_due_date",
-            "aut_sync_enabled",
+            "auto_sync_enabled",
             "last_synced",
         ]
         read_only_fields = ["last_synced"]
