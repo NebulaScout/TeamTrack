@@ -56,3 +56,36 @@ class DashboardSerializer(serializers.Serializer):
     project_progress = ProjectProgressSerializer(many=True)
     recent_activity = ActivitySerializer(many=True)
     upcoming_deadlines = UpcomingDeadlineSerializer(many=True)
+
+
+# Admin Dashboard
+class OverdueTaskSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    project_name = serializers.CharField()
+    due_date = serializers.DateField()
+    assigned_to = DashboardUserSerializer(allow_null=True)
+
+
+class UnassignedTaskSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    project_name = serializers.CharField()
+    priority = serializers.CharField(allow_null=True)
+
+
+class AdminActivitySerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    action_type = serializers.ChoiceField(
+        choices=["user_registered", "task_completed", "comment_added", "task_updated"]
+    )
+    description = serializers.CharField()
+    actor_name = serializers.CharField()  # display name or username
+    actor_url = serializers.CharField(allow_null=True)  # profile link if needed
+    timestamp = serializers.DateTimeField()
+
+
+class AdminQuickActions(serializers.Serializer):
+    overdue_tasks = OverdueTaskSerializer(many=True)
+    unassigned_tasks = UnassignedTaskSerializer(many=True)
+    recent_activity = AdminActivitySerializer(many=True)

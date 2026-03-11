@@ -1,4 +1,5 @@
 from datetime import timedelta
+from rest_framework import status
 
 from django.db.models import Count, Q
 from django.utils import timezone
@@ -11,7 +12,9 @@ from api.v1.common.responses import ResponseMixin
 from core.services.enums import StatusEnum
 from projects.models import ProjectMembers, ProjectsModel
 from tasks.models import CommentModel, TaskHistoryModel, TaskModel
+from django.contrib.auth.models import User
 
+from accounts.models import RegisterModel
 from .serializers import (
     ActivitySerializer,
     DashboardSerializer,
@@ -244,4 +247,124 @@ class DashboardView(ResponseMixin, APIView):
         }
 
         serializer = DashboardSerializer(payload)
+        return self._success(data=serializer.data)
+
+
+class AdminQuickActions(ResponseMixin, APIView):
+    """
+    Admin-only dashboard.
+
+    Returns:
+    - overdue_tasks  : non-done tasks whose due_date is in the past (up to 20)
+    - unassigned_tasks: tasks with no assigned_to, not done (up to 20)
+    - recent_activity: platform-wide events — new registrations + task history (up to 20)
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_staff:
+            return self._error(
+                code="FORBIDDEN",
+                message="Admin access required.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+        from .serializers import AdminQuickActions
+
+        now = timezone.now()
+        today = now.date()
+        week_ago = now - timedelta(days=7)
+
+        # Overdue tasks (platform-wide, not just user's projects)
+        overdue_qs = (
+            TaskModel.objects.filter(due_date__lt=today)
+            .exclude(status=StatusEnum.DONE)
+            .select_related("project", "assigned_to", "assigned_to__profile")
+            .order_by("due_date")[:20]
+        )
+        overdue_tasks = [
+            {
+                "id": task.pk,
+                "title": task.title,
+                "project_name": task.project.project_name,
+                "due_date": task.due_date,
+                "assigned_to": task.assigned_to,
+            }
+            for task in overdue_qs
+        ]
+
+        # Unassigned tasks (platform-wide, not done)
+        unassigned_qs = (
+            TaskModel.objects.filter(assigned_to__isnull=True)
+            .exclude(status=StatusEnum.DONE)
+            .select_related("project")
+            .order_by("-priority", "due_date")[:20]
+        )
+        unassigned_tasks = [
+            {
+                "id": task.pk,
+                "title": task.title,
+                "project_name": task.project.project_name,
+                "priority": task.priority,
+            }
+            for task in unassigned_qs
+        ]
+
+        # Recent platform-wide activity
+        activities = []
+
+        # New user registrations in the last 7 days
+        registrations = (
+            RegisterModel.objects.filter(created_at__gte=week_ago)
+            .select_related("user")
+            .order_by("-created_at")[:20]
+        )
+        for reg in registrations:
+            full_name = reg.user.get_full_name() or reg.user.username
+            activities.append(
+                {
+                    "id": reg.pk,
+                    "action_type": "user_registered",
+                    "description": "New user registered",
+                    "actor_name": full_name,
+                    "actor_url": None,
+                    "timestamp": reg.created_at,
+                }
+            )
+
+        # Task completions across the platform in the last 7 days
+        completions = (
+            TaskHistoryModel.objects.filter(
+                field_changed="status",
+                new_value=StatusEnum.DONE,
+                timestamp__gte=week_ago,
+            )
+            .select_related("changed_by", "task")
+            .order_by("-timestamp")[:20]
+        )
+        for history in completions:
+            actor = history.changed_by
+            full_name = actor.get_full_name() if actor else "Unknown"
+            activities.append(
+                {
+                    "id": history.pk,
+                    "action_type": "task_completed",
+                    "description": f"completed task \"{history.task.title if history.task else ''}\"",
+                    "actor_name": full_name or (actor.username if actor else "Unknown"),
+                    "actor_url": None,
+                    "timestamp": history.timestamp,
+                }
+            )
+
+        activities.sort(key=lambda x: x["timestamp"], reverse=True)
+        activities = activities[:20]
+
+        payload = {
+            "overdue_tasks": overdue_tasks,
+            "unassigned_tasks": unassigned_tasks,
+            "recent_activity": activities,
+        }
+
+        serializer = AdminQuickActions(payload)
         return self._success(data=serializer.data)
