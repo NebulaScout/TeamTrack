@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 
+from projects.models import ProjectsModel
+
 
 class DashboardUserSerializer(serializers.ModelSerializer):
     avatar = serializers.ImageField(source="profile.avatar", read_only=True)
@@ -139,3 +141,89 @@ class AdminUserUpdateSerializer(serializers.Serializer):
 
     role = serializers.ChoiceField(choices=ROLE_CHOICES, required=False)
     is_active = serializers.BooleanField(required=False)
+
+
+# Project's Tab
+class AdminProjectOwnerSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "full_name", "avatar"]
+
+    def get_full_name(self, obj):
+        return obj.get_full_name() or obj.username
+
+    def get_avatar(self, obj):
+        request = self.context.get("request")
+        if hasattr(obj, "profile") and obj.profile and obj.profile.avatar:
+            return (
+                request.build_absolute_uri(obj.profile.avatar.url)
+                if request
+                else obj.profile.avatar.url
+            )
+        return None
+
+
+class AdminProjectMemberSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "avatar"]
+
+    def get_avatar(self, obj):
+        request = self.context.get("request")
+        if hasattr(obj, "profile") and obj.profile and obj.profile.avatar:
+            return (
+                request.build_absolute_uri(obj.profile.avatar.url)
+                if request
+                else obj.profile.avatar.url
+            )
+        return None
+
+
+class AdminProjectListSerializer(serializers.ModelSerializer):
+    owner = AdminProjectOwnerSerializer(source="created_by", read_only=True)
+    members = serializers.SerializerMethodField()
+    member_count = serializers.IntegerField(read_only=True)
+    tasks_completed = serializers.IntegerField(read_only=True)
+    tasks_total = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = ProjectsModel
+        fields = [
+            "id",
+            "project_name",
+            "description",
+            "status",
+            "priority",
+            "start_date",
+            "end_date",
+            "created_at",
+            "owner",
+            "members",
+            "member_count",
+            "tasks_completed",
+            "tasks_total",
+        ]
+
+    def get_members(self, obj):
+        member_users = [m.project_member for m in obj.members.all()]
+        return AdminProjectMemberSerializer(
+            member_users, many=True, context=self.context
+        ).data
+
+
+class AdminProjectWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectsModel
+        fields = [
+            "project_name",
+            "description",
+            "status",
+            "priority",
+            "start_date",
+            "end_date",
+        ]

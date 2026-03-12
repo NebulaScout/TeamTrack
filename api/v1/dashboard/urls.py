@@ -5,6 +5,8 @@ from .views import (
     AdminQuickActionsView,
     AdminUserDetailView,
     AdminUsersView,
+    AdminProjectsView,
+    AdminProjectDetailView,
 )
 
 urlpatterns = [
@@ -13,5 +15,11 @@ urlpatterns = [
     path("admin/users/", AdminUsersView.as_view(), name="admin-users"),
     path(
         "admin/users/<int:pk>/", AdminUserDetailView.as_view(), name="admin-user-detail"
+    ),
+    path("admin/projects/", AdminProjectsView.as_view(), name="admin-projects"),
+    path(
+        "admin/projects/<int:pk>/",
+        AdminProjectDetailView.as_view(),
+        name="admin-project-detail",
     ),
 ]
