@@ -28,6 +28,9 @@ from .serializers import (
     AdminProjectMemberSerializer,
     AdminProjectOwnerSerializer,
     AdminProjectWriteSerializer,
+    AdminTaskListSerializer,
+    AdminTasksResponseSerializer,
+    AdminTaskUpdateSerializer,
 )
 
 
@@ -699,3 +702,225 @@ class AdminProjectDetailView(ResponseMixin, APIView):
             message="Project deleted successfully",
             status_code=status.HTTP_204_NO_CONTENT,
         )
+
+
+class AdminTasksView(ResponseMixin, APIView):
+    """
+    GET /dashboard/admin/tasks/
+    Returns platform-wide (Admin) or project-scoped (Project Manager) task list
+    plus summary stats shown in the two cards at the top of the Tasks tab.
+
+    Query params:
+      - search   : filters by task title or project name
+      - status   : exact match against StatusEnum (TO_DO, IN_PROGRESS, IN_REVIEW, DONE)
+      - priority : exact match against PriorityEnum (LOW, MEDIUM, HIGH)
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _is_authorised(self, user):
+        return user.is_staff or user.groups.filter(name="Project Manager").exists()
+
+    def _base_queryset(self, user):
+        qs = TaskModel.objects.select_related(
+            "project",
+            "assigned_to",
+            "assigned_to__profile",
+        ).order_by("-created_at")
+        if user.is_staff:
+            return qs  # Admin: all tasks platform-wide
+        # Project Manager: only tasks belonging to their projects
+        project_ids = list(
+            ProjectsModel.objects.filter(
+                Q(created_by=user) | Q(members__project_member=user)
+            )
+            .distinct()
+            .values_list("id", flat=True)
+        )
+        return qs.filter(project_id__in=project_ids)
+
+    @extend_schema(responses=AdminTasksResponseSerializer)
+    def get(self, request):
+
+        user = request.user
+        if not self._is_authorised(user):
+            return self._error(
+                "FORBIDDEN",
+                "Admin or Project Manager access required.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        today = timezone.now().date()
+        base_qs = self._base_queryset(user)
+
+        # Stats (computed before search/filter so the cards always reflect reality)
+        overdue_count = (
+            base_qs.filter(due_date__lt=today).exclude(status=StatusEnum.DONE).count()
+        )
+        unassigned_count = (
+            base_qs.filter(assigned_to__isnull=True)
+            .exclude(status=StatusEnum.DONE)
+            .count()
+        )
+
+        task_qs = base_qs
+
+        search = request.query_params.get("search", "").strip()
+        if search:
+            task_qs = task_qs.filter(
+                Q(title__icontains=search) | Q(project__project_name__icontains=search)
+            )
+
+        status_filter = request.query_params.get("status", "").strip().upper()
+        if status_filter:
+            task_qs = task_qs.filter(status=status_filter)
+
+        priority_filter = request.query_params.get("priority", "").strip().upper()
+        if priority_filter:
+            task_qs = task_qs.filter(priority=priority_filter)
+
+        serializer = AdminTaskListSerializer(
+            task_qs, many=True, context={"request": request}
+        )
+        return self._success(
+            data={
+                "stats": {
+                    "overdue_count": overdue_count,
+                    "unassigned_count": unassigned_count,
+                },
+                "tasks": serializer.data,
+            }
+        )
+
+
+class AdminTaskDetailView(ResponseMixin, APIView):
+    """
+    PATCH  /dashboard/admin/tasks/<pk>/
+        Update a task's status, priority, or assignee.
+        Admin: any task. Project Manager: only tasks in their projects.
+
+    DELETE /dashboard/admin/tasks/<pk>/
+        Delete a task.
+        Admin: any task. Project Manager: only tasks in their projects.
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _is_authorised(self, user):
+        return user.is_staff or user.groups.filter(name="Project Manager").exists()
+
+    def _get_task(self, pk, user):
+        """
+        Returns (task, None) on success.
+        Returns (None, 'not_found') or (None, 'forbidden') on failure.
+        """
+        try:
+            task = TaskModel.objects.select_related(
+                "project", "assigned_to", "assigned_to__profile"
+            ).get(pk=pk)
+        except TaskModel.DoesNotExist:
+            return None, "not_found"
+
+        if user.is_staff:
+            return task, None
+
+        # Project Manager scope check
+        project_ids = list(
+            ProjectsModel.objects.filter(
+                Q(created_by=user) | Q(members__project_member=user)
+            )
+            .distinct()
+            .values_list("id", flat=True)
+        )
+        if task.project.pk not in project_ids:
+            return None, "forbidden"
+
+        return task, None
+
+    @extend_schema(request=AdminTaskUpdateSerializer, responses=AdminTaskListSerializer)
+    def patch(self, request, pk):
+
+        user = request.user
+        if not self._is_authorised(user):
+            return self._error(
+                "FORBIDDEN",
+                "Admin or Project Manager access required.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        task, err = self._get_task(pk, user)
+        if err == "not_found":
+            return self._error(
+                "NOT_FOUND", "Task not found.", status_code=status.HTTP_404_NOT_FOUND
+            )
+        if err == "forbidden":
+            return self._error(
+                "FORBIDDEN",
+                "You do not have access to this task.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = AdminTaskUpdateSerializer(data=request.data, partial=True)
+        if not serializer.is_valid():
+            return self._error(
+                "VALIDATION_ERROR",
+                "Invalid data.",
+                serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        data = serializer.validated_data or {}
+
+        if task:
+            if isinstance(data, dict) and "status" in data:
+                task.status = data["status"]
+            if isinstance(data, dict) and "priority" in data:
+                task.priority = data["priority"]
+            if isinstance(data, dict) and "assigned_to" in data:
+                if data["assigned_to"] is None:
+                    task.assigned_to = None
+                else:
+                    try:
+                        new_assignee = User.objects.get(pk=data["assigned_to"])
+                    except User.DoesNotExist:
+                        return self._error(
+                            "NOT_FOUND",
+                            "Assigned user not found.",
+                            status_code=status.HTTP_404_NOT_FOUND,
+                        )
+                    task.assigned_to = new_assignee
+
+            task.save()
+
+            # Re-fetch with relations so the serializer can traverse them
+            updated_task = TaskModel.objects.select_related(
+                "project", "assigned_to", "assigned_to__profile"
+            ).get(pk=task.pk)
+
+            return self._success(
+                data=AdminTaskListSerializer(
+                    updated_task, context={"request": request}
+                ).data,
+                message="Task updated successfully.",
+            )
+
+    def delete(self, request, pk):
+        user = request.user
+        if not self._is_authorised(user):
+            return self._error(
+                "FORBIDDEN",
+                "Admin or Project Manager access required.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        task, err = self._get_task(pk, user)
+        if err == "not_found" or err == "forbidden":
+            return self._error(
+                "NOT_FOUND", "Task not found.", status_code=status.HTTP_404_NOT_FOUND
+            )
+
+        if task:
+            task.delete()
+        return self._success(message="Task deleted successfully.")

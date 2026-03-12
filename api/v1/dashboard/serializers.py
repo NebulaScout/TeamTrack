@@ -1,7 +1,10 @@
 from rest_framework import serializers
+from django.utils import timezone
 from django.contrib.auth.models import User
 
 from projects.models import ProjectsModel
+from tasks.models import TaskModel
+from core.services.enums import StatusEnum, PriorityEnum
 
 
 class DashboardUserSerializer(serializers.ModelSerializer):
@@ -227,3 +230,77 @@ class AdminProjectWriteSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
         ]
+
+
+# Tasks Tab
+class AdminTaskAssigneeSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "full_name", "avatar"]
+
+    def get_full_name(self, obj):
+        return obj.get_full_name() or obj.username
+
+    def get_avatar(self, obj):
+        request = self.context.get("request")
+        if hasattr(obj, "profile") and obj.profile and obj.profile.avatar:
+            return (
+                request.build_absolute_uri(obj.profile.avatar.url)
+                if request
+                else obj.profile.avatar.url
+            )
+        return None
+
+
+class AdminTaskListSerializer(serializers.ModelSerializer):
+    project_name = serializers.CharField(source="project.project_name", read_only=True)
+    assignee = serializers.SerializerMethodField()
+    is_overdue = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskModel
+        fields = [
+            "id",
+            "title",
+            "project_id",
+            "project_name",
+            "assignee",
+            "status",
+            "priority",
+            "due_date",
+            "is_overdue",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_assignee(self, obj):
+        if obj.assigned_to is None:
+            return None
+        return AdminTaskAssigneeSerializer(obj.assigned_to, context=self.context).data
+
+    def get_is_overdue(self, obj):
+
+        if obj.due_date and obj.status != "DONE":
+            return obj.due_date < timezone.now().date()
+        return False
+
+
+class AdminTaskStatsSerializer(serializers.Serializer):
+    overdue_count = serializers.IntegerField()
+    unassigned_count = serializers.IntegerField()
+
+
+class AdminTasksResponseSerializer(serializers.Serializer):
+    stats = AdminTaskStatsSerializer()
+    tasks = AdminTaskListSerializer(many=True)
+
+
+class AdminTaskUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=StatusEnum.choices, required=False)
+    priority = serializers.ChoiceField(
+        choices=PriorityEnum.choices, required=False, allow_null=True
+    )
+    assigned_to = serializers.IntegerField(required=False, allow_null=True)

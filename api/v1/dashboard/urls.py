@@ -7,7 +7,10 @@ from .views import (
     AdminUsersView,
     AdminProjectsView,
     AdminProjectDetailView,
+    AdminTaskDetailView,
+    AdminTasksView,
 )
+
 
 urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
@@ -21,5 +24,9 @@ urlpatterns = [
         "admin/projects/<int:pk>/",
         AdminProjectDetailView.as_view(),
         name="admin-project-detail",
+    ),
+    path("admin/tasks/", AdminTasksView.as_view(), name="admin-tasks"),
+    path(
+        "admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"
     ),
 ]
