@@ -85,7 +85,57 @@ class AdminActivitySerializer(serializers.Serializer):
     timestamp = serializers.DateTimeField()
 
 
-class AdminQuickActions(serializers.Serializer):
+class AdminQuickActionsSerializer(serializers.Serializer):
     overdue_tasks = OverdueTaskSerializer(many=True)
     unassigned_tasks = UnassignedTaskSerializer(many=True)
     recent_activity = AdminActivitySerializer(many=True)
+
+
+# User's tab
+class AdminUserSerializer(serializers.ModelSerializer):
+    avatar = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    registered_on = serializers.DateTimeField(source="date_joined", read_only=True)
+    project_count = serializers.IntegerField(read_only=True)
+    task_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "avatar",
+            "role",
+            "status",
+            "registered_on",
+            "project_count",
+            "task_count",
+        ]
+
+    def get_avatar(self, obj):
+        if hasattr(obj, "profile") and obj.profile and obj.profile.avatar:
+            request = self.context.get("request")
+            return (
+                request.build_absolute_uri(obj.profile.avatar.url)
+                if request
+                else obj.profile.avatar.url
+            )
+        return None
+
+    def get_role(self, obj):
+        group = obj.groups.first()
+        return group.name if group else None
+
+    def get_status(self, obj):
+        return "active" if obj.is_active else "inactive"
+
+
+class AdminUserUpdateSerializer(serializers.Serializer):
+    ROLE_CHOICES = ["Admin", "Project Manager", "Developer", "Guest"]
+
+    role = serializers.ChoiceField(choices=ROLE_CHOICES, required=False)
+    is_active = serializers.BooleanField(required=False)
