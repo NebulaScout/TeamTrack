@@ -304,3 +304,56 @@ class AdminTaskUpdateSerializer(serializers.Serializer):
         choices=PriorityEnum.choices, required=False, allow_null=True
     )
     assigned_to = serializers.IntegerField(required=False, allow_null=True)
+
+
+# Audit Logs Tab
+class AuditLogUserSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "full_name", "avatar"]
+
+    def get_full_name(self, obj):
+        return obj.get_full_name() or obj.username
+
+    def get_avatar(self, obj):
+        request = self.context.get("request")
+        if hasattr(obj, "profile") and obj.profile and obj.profile.avatar:
+            return (
+                request.build_absolute_uri(obj.profile.avatar.url)
+                if request
+                else obj.profile.avatar.url
+            )
+        return None
+
+
+class AuditLogSerializer(serializers.Serializer):
+    """
+    Serializer for audit log entries showing task history changes
+    """
+
+    id = serializers.IntegerField()
+    actor = AuditLogUserSerializer()
+    action_type = (
+        serializers.CharField()
+    )  # 'changed_status', 'changed_priority', 'assigned', etc.
+    description = serializers.CharField()  # Human-readable description
+    task_id = serializers.IntegerField(allow_null=True)
+    task_title = serializers.CharField()
+    project_id = serializers.IntegerField(allow_null=True)
+    project_name = serializers.CharField()
+    field_changed = serializers.CharField()
+    old_value = serializers.CharField(allow_null=True)
+    new_value = serializers.CharField()
+    timestamp = serializers.DateTimeField()
+
+
+class AuditLogsResponseSerializer(serializers.Serializer):
+    """
+    Response wrapper for audit logs endpoint
+    """
+
+    logs = AuditLogSerializer(many=True)
+    total_count = serializers.IntegerField()

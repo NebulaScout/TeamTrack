@@ -13,12 +13,19 @@ ROLE_PERMISSIONS = {
         "change_user",
         "delete_user",
         "view_user",
-        # member assignment
+        # project memeber
         "add_projectmembers",
         "delete_projectmembers",
         "change_projectmembers",
-        "view_projectmembers",  
-        # task permissions  
+        "view_projectmembers",
+        # Team actions
+        "invite_team_member",
+        "remove_team_member",
+        "update_member_role",
+        "list_team_members",
+        "team_stats",
+        "leave_project",
+        # task permissions
         "add_taskmodel",
         "view_taskmodel",
         "change_taskmodel",
@@ -34,7 +41,7 @@ ROLE_PERMISSIONS = {
         "add_calendarevent",
         "change_calendarevent",
         "view_calendarevent",
-        "delete_calendarevent"
+        "delete_calendarevent",
     ],
     "Project Manager": [
         # project_model_permissions
@@ -46,12 +53,19 @@ ROLE_PERMISSIONS = {
         "add_projectmembers",
         # user_permissions
         "view_user",
-        # member assignment
+        # project member
         "add_projectmembers",
         "delete_projectmembers",
         "change_projectmembers",
         "view_projectmembers",
-        # task permissions  
+        # Team actions
+        "invite_team_member",
+        "remove_team_member",
+        "update_member_role",
+        "list_team_members",
+        "team_stats",
+        "leave_project",
+        # task permissions
         "add_taskmodel",
         "view_taskmodel",
         "change_taskmodel",
@@ -67,15 +81,19 @@ ROLE_PERMISSIONS = {
         "add_calendarevent",
         "change_calendarevent",
         "view_calendarevent",
-        "delete_calendarevent"
+        "delete_calendarevent",
     ],
     "Developer": [
         # project_model_permissions
         # user_permissions
         # "view_user",
-        # member assignment
+        # project member
         "view_projectmembers",
-        # task permissions  
+        # Team actions
+        "list_team_members",
+        "team_stats",
+        "leave_project",
+        # task permissions
         "view_taskmodel",
         "change_taskmodel",
         # comment permissions
@@ -86,33 +104,37 @@ ROLE_PERMISSIONS = {
         "add_calendarevent",
         "change_calendarevent",
         "view_calendarevent",
-        "delete_calendarevent"
+        "delete_calendarevent",
     ],
     "Guest": [
         # project_model_permissions
         "view_projectsmodel",
-        # member assignment
+        # project member
         "view_projectmembers",
-        # task permissions  
+        # Team actions
+        "list_team_members",
+        "team_stats",
+        "leave_project",
+        # task permissions
         "view_taskmodel",
         # comment permissions
         "view_commentmodel",
         # Calendar event permissions
         "view_calendarevent",
-        
     ],
 }
+
 
 def initialize_roles():
     for role_name, perm_codenames in ROLE_PERMISSIONS.items():
         group, _ = Group.objects.get_or_create(name=role_name)
 
-        permissions = Permission.objects.filter(
-            codename__in = perm_codenames
-        )
+        permissions = Permission.objects.filter(codename__in=perm_codenames)
 
-        found = set(permissions.values_list("codename", flat=True))  # Check for available permissions
-        missing = set(perm_codenames) - found # Chaeck for missing permissions
+        found = set(
+            permissions.values_list("codename", flat=True)
+        )  # Check for available permissions
+        missing = set(perm_codenames) - found  # Chaeck for missing permissions
 
         # Check if a role is missing and fail loudly if true
         if missing:

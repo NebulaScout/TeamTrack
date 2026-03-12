@@ -37,7 +37,7 @@ class RoleEnum(models.TextChoices):
 
     ADMIN = "Admin", "Admin"
     PROJECT_MANAGER = "Project Manager", "Project Manager"
-    DEVELOPER = "Team Member", "Team Member"
+    DEVELOPER = "Developer", "Developer"
     GUEST = "Guest", "Guest"
 
 

@@ -82,7 +82,12 @@ class ProjectPermissions(permissions.BasePermission):
             "destroy": "delete_projectsmodel",
             "add_members": "add_projectmembers",
             "tasks": "add_taskmodel",
-            "tasks": "view_taskmodel",
+            "invite_team_member": "invite_team_member",
+            "list_team_members": "list_team_members",
+            "team_stats": "team_stats",
+            "update_member_role": "update_member_role",
+            "remove_team_member": "remove_team_member",
+            "leave_project": "leave_project",
         }
 
         required_permission = permissions_map.get(view.action)
