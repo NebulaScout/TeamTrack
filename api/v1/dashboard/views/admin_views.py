@@ -15,9 +15,8 @@ from core.services.project_service import ProjectService
 from projects.models import ProjectMembers, ProjectsModel
 from tasks.models import CommentModel, TaskHistoryModel, TaskModel
 from accounts.models import RegisterModel
-from ..serializers import (
+from ..serializers.admin_serializers import (
     AuditLogsResponseSerializer,
-    DashboardSerializer,
     AdminUserSerializer,
     AdminUserUpdateSerializer,
     AdminProjectListSerializer,
@@ -28,6 +27,7 @@ from ..serializers import (
     AdminQuickActionsSerializer,
     AdminTaskDetailSerializer,
 )
+from ..serializers.user_serializers import DashboardSerializer
 
 
 class AdminQuickActionsView(ResponseMixin, APIView):
