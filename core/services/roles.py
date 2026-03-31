@@ -19,12 +19,12 @@ ROLE_PERMISSIONS = {
         "change_projectmembers",
         "view_projectmembers",
         # Team actions
-        "invite_team_member",
-        "remove_team_member",
-        "update_member_role",
-        "list_team_members",
-        "team_stats",
-        "leave_project",
+        # "invite_team_member",
+        # "remove_team_member",
+        # "update_member_role",
+        # "list_team_members",
+        # "team_stats",
+        # "leave_project",
         # task permissions
         "add_taskmodel",
         "view_taskmodel",
@@ -59,12 +59,12 @@ ROLE_PERMISSIONS = {
         "change_projectmembers",
         "view_projectmembers",
         # Team actions
-        "invite_team_member",
-        "remove_team_member",
-        "update_member_role",
-        "list_team_members",
-        "team_stats",
-        "leave_project",
+        # "invite_team_member",
+        # "remove_team_member",
+        # "update_member_role",
+        # "list_team_members",
+        # "team_stats",
+        # "leave_project",
         # task permissions
         "add_taskmodel",
         "view_taskmodel",
@@ -85,14 +85,15 @@ ROLE_PERMISSIONS = {
     ],
     "Developer": [
         # project_model_permissions
+        "view_projectsmodel",
         # user_permissions
-        # "view_user",
+        "view_user",
         # project member
         "view_projectmembers",
         # Team actions
-        "list_team_members",
-        "team_stats",
-        "leave_project",
+        # "list_team_members",
+        # "team_stats",
+        # "leave_project",
         # task permissions
         "view_taskmodel",
         "change_taskmodel",
@@ -112,13 +113,14 @@ ROLE_PERMISSIONS = {
         # project member
         "view_projectmembers",
         # Team actions
-        "list_team_members",
-        "team_stats",
-        "leave_project",
+        # "list_team_members",
+        # "team_stats",
+        # "leave_project",
         # task permissions
         "view_taskmodel",
         # comment permissions
         "view_commentmodel",
+        "add_commentmodel",
         # Calendar event permissions
         "view_calendarevent",
     ],

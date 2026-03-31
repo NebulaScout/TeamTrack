@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.utils import timezone
 from django.contrib.auth.models import User
 
-from projects.models import ProjectsModel
+from projects.models import ProjectsModel, ProjectMembers
 from tasks.models import TaskModel
 from core.services.enums import StatusEnum, PriorityEnum
 from .user_serializers import DashboardUserSerializer
@@ -20,6 +20,7 @@ class OverdueTaskSerializer(serializers.Serializer):
 class UnassignedTaskSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     title = serializers.CharField()
+    project_id = serializers.IntegerField()
     project_name = serializers.CharField()
     priority = serializers.CharField(allow_null=True)
 
@@ -115,19 +116,34 @@ class AdminProjectOwnerSerializer(serializers.ModelSerializer):
 
 
 class AdminProjectMemberSerializer(serializers.ModelSerializer):
+    # user-level fields (from related User via project_member FK)
+    id = serializers.IntegerField(source="project_member.id", read_only=True)
+    username = serializers.CharField(source="project_member.username", read_only=True)
     avatar = serializers.SerializerMethodField()
 
+    # membership-level field (from ProjectMembers model itself)
+    role = serializers.CharField(source="role_in_project", read_only=True)
+
     class Meta:
-        model = User
-        fields = ["id", "username", "avatar"]
+        model = ProjectMembers
+        fields = [
+            "id",
+            "username",
+            "avatar",
+            "role",
+        ]
+
+    # def get_full_name(self, obj):
+    #     return obj.project_member.get_full_name() or obj.project_member.username
 
     def get_avatar(self, obj):
         request = self.context.get("request")
-        if hasattr(obj, "profile") and obj.profile and obj.profile.avatar:
+        user = obj.project_member
+        if hasattr(user, "profile") and user.profile and user.profile.avatar:
             return (
-                request.build_absolute_uri(obj.profile.avatar.url)
+                request.build_absolute_uri(user.profile.avatar.url)
                 if request
-                else obj.profile.avatar.url
+                else user.profile.avatar.url
             )
         return None
 

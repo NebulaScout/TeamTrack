@@ -48,13 +48,25 @@ class TaskViewSet(viewsets.ModelViewSet):
             return TaskDetailSerializer
         return TaskDetailSerializer
 
+    def _can_view_all_tasks(self, user):
+        # Treat Django staff/superuser as global admin
+        if user.is_staff or user.is_superuser:
+            return True
+
+        user_groups = user.groups.values_list("name", flat=True)
+        return any(
+            "view_taskmodel" in ROLE_PERMISSIONS.get(group, []) for group in user_groups
+        )
+
     def get_queryset(self):  # type: ignore
         user = self.request.user
 
-        # Base queryset optimization based on action
-        queryset = TaskModel.objects.filter(
-            Q(created_by=user) | Q(assigned_to=user)
-        ).distinct()
+        if self._can_view_all_tasks(user):
+            queryset = TaskModel.objects.all().distinct()
+        else:
+            queryset = TaskModel.objects.filter(
+                Q(created_by=user) | Q(assigned_to=user)
+            ).distinct()
 
         # Optimize based on action
         if self.action == "list":

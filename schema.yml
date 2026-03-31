@@ -19,20 +19,20 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
         required: true
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TokenObtainPair'
+                $ref: '#/components/schemas/CustomTokenObtainPair'
           description: ''
   /api/token/refresh/:
     post:
@@ -122,8 +122,7 @@ paths:
       - in: path
         name: id
         schema:
-          type: integer
-        description: A unique integer value identifying this user.
+          type: string
         required: true
       tags:
       - v1
@@ -303,13 +302,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPair'
+              $ref: '#/components/schemas/CustomTokenObtainPair'
         required: true
       security:
       - jwtAuth: []
@@ -322,7 +321,7 @@ paths:
                 $ref: '#/components/schemas/LoginResponse'
           description: ''
         '401':
-          description: Invalid email or password
+          description: Invalid username/email or password
         '429':
           description: Too many login attempts
   /api/v1/auth/logout/:
@@ -349,9 +348,199 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/calendar/deadline-sync/:
+    get:
+      operationId: v1_calendar_deadline_sync_list
+      description: Task Deadline Sync ViewSet - manage auto-sync settings
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskDeadlineSync'
+          description: ''
+    post:
+      operationId: v1_calendar_deadline_sync_create
+      description: Task Deadline Sync ViewSet - manage auto-sync settings
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDeadlineSync'
+          description: ''
+  /api/v1/calendar/deadline-sync/{id}/:
+    get:
+      operationId: v1_calendar_deadline_sync_retrieve
+      description: Task Deadline Sync ViewSet - manage auto-sync settings
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDeadlineSync'
+          description: ''
+    put:
+      operationId: v1_calendar_deadline_sync_update
+      description: Task Deadline Sync ViewSet - manage auto-sync settings
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDeadlineSync'
+          description: ''
+    patch:
+      operationId: v1_calendar_deadline_sync_partial_update
+      description: Task Deadline Sync ViewSet - manage auto-sync settings
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskDeadlineSync'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskDeadlineSync'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTaskDeadlineSync'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDeadlineSync'
+          description: ''
+    delete:
+      operationId: v1_calendar_deadline_sync_destroy
+      description: Task Deadline Sync ViewSet - manage auto-sync settings
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/calendar/deadline-sync/{id}/sync_now/:
+    post:
+      operationId: v1_calendar_deadline_sync_sync_now_create
+      description: Manually trigger sync for a specific task
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TaskDeadlineSync'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDeadlineSync'
+          description: ''
   /api/v1/calendar/events/:
     get:
       operationId: v1_calendar_events_list
+      description: Calendar event viewset with advanced filtering and timeline views
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
       tags:
       - v1
       security:
@@ -367,6 +556,7 @@ paths:
           description: ''
     post:
       operationId: v1_calendar_events_create
+      description: Calendar event viewset with advanced filtering and timeline views
       tags:
       - v1
       requestBody:
@@ -393,6 +583,7 @@ paths:
   /api/v1/calendar/events/{id}/:
     get:
       operationId: v1_calendar_events_retrieve
+      description: Calendar event viewset with advanced filtering and timeline views
       parameters:
       - in: path
         name: id
@@ -412,6 +603,7 @@ paths:
           description: ''
     put:
       operationId: v1_calendar_events_update
+      description: Calendar event viewset with advanced filtering and timeline views
       parameters:
       - in: path
         name: id
@@ -443,6 +635,7 @@ paths:
           description: ''
     patch:
       operationId: v1_calendar_events_partial_update
+      description: Calendar event viewset with advanced filtering and timeline views
       parameters:
       - in: path
         name: id
@@ -473,11 +666,876 @@ paths:
           description: ''
     delete:
       operationId: v1_calendar_events_destroy
+      description: Calendar event viewset with advanced filtering and timeline views
       parameters:
       - in: path
         name: id
         schema:
           type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/calendar/events/overview/:
+    get:
+      operationId: v1_calendar_events_overview_retrieve
+      description: |-
+        Get calendar overview with statistics
+        Query params: days_ahead (default: 30)
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+          description: ''
+  /api/v1/calendar/events/sync_task_deadlines/:
+    post:
+      operationId: v1_calendar_events_sync_task_deadlines_create
+      description: Manually trigger sync of all task deadlines to calendar
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarEvent'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CalendarEvent'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CalendarEvent'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+          description: ''
+  /api/v1/calendar/events/timeline/:
+    get:
+      operationId: v1_calendar_events_timeline_retrieve
+      description: |-
+        Get aggregated timeline view with events, tasks, and milestones
+        Query params: start_date, end_date (default: current week)
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+          description: ''
+  /api/v1/calendar/events/upcoming_deadlines/:
+    get:
+      operationId: v1_calendar_events_upcoming_deadlines_retrieve
+      description: Get all upcoming deadlines (tasks + milestones) in chronological
+        order
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarEvent'
+          description: ''
+  /api/v1/calendar/milesones/:
+    get:
+      operationId: v1_calendar_milesones_list
+      description: Project milestone viewset
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectMilestone'
+          description: ''
+    post:
+      operationId: v1_calendar_milesones_create
+      description: Project milestone viewset
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMilestone'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectMilestone'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectMilestone'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMilestone'
+          description: ''
+  /api/v1/calendar/milesones/{id}/:
+    get:
+      operationId: v1_calendar_milesones_retrieve
+      description: Project milestone viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMilestone'
+          description: ''
+    put:
+      operationId: v1_calendar_milesones_update
+      description: Project milestone viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectMilestone'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProjectMilestone'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProjectMilestone'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMilestone'
+          description: ''
+    patch:
+      operationId: v1_calendar_milesones_partial_update
+      description: Project milestone viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMilestone'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMilestone'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProjectMilestone'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMilestone'
+          description: ''
+    delete:
+      operationId: v1_calendar_milesones_destroy
+      description: Project milestone viewset
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/calendar/milesones/overdue/:
+    get:
+      operationId: v1_calendar_milesones_overdue_retrieve
+      description: Get all overdue milestones
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMilestone'
+          description: ''
+  /api/v1/calendar/preferences/:
+    get:
+      operationId: v1_calendar_preferences_list
+      description: Calendar View Preferences ViewSet
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CalendarView'
+          description: ''
+    post:
+      operationId: v1_calendar_preferences_create
+      description: Calendar View Preferences ViewSet
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarView'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CalendarView'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CalendarView'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarView'
+          description: ''
+  /api/v1/calendar/preferences/{id}/:
+    get:
+      operationId: v1_calendar_preferences_retrieve
+      description: Calendar View Preferences ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarView'
+          description: ''
+    put:
+      operationId: v1_calendar_preferences_update
+      description: Calendar View Preferences ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CalendarView'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CalendarView'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CalendarView'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarView'
+          description: ''
+    patch:
+      operationId: v1_calendar_preferences_partial_update
+      description: Calendar View Preferences ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCalendarView'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCalendarView'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCalendarView'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarView'
+          description: ''
+    delete:
+      operationId: v1_calendar_preferences_destroy
+      description: Calendar View Preferences ViewSet
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/calendar/preferences/my_preferences/:
+    get:
+      operationId: v1_calendar_preferences_my_preferences_retrieve
+      description: Get or create preferences for current user
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarView'
+          description: ''
+  /api/v1/dashboard/:
+    get:
+      operationId: v1_dashboard_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+  /api/v1/dashboard/admin/:
+    get:
+      operationId: v1_dashboard_admin_retrieve
+      description: |-
+        Admin-only dashboard.
+
+        Returns:
+        - overdue_tasks  : non-done tasks whose due_date is in the past (up to 20)
+        - unassigned_tasks: tasks with no assigned_to, not done (up to 20)
+        - recent_activity: platform-wide events — new registrations + task history (up to 20)
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminQuickActions'
+          description: ''
+  /api/v1/dashboard/admin/audit-logs/:
+    get:
+      operationId: v1_dashboard_admin_audit_logs_retrieve
+      description: |-
+        GET /dashboard/admin/audit-logs/
+
+        Returns platform-wide (Admin) or project-scoped (Project Manager) audit logs
+        from TaskHistoryModel showing all task changes with comprehensive filtering.
+
+        Query params:
+          - search      : filters by task title or project name
+          - project     : filter by specific project ID
+          - user        : filter by user ID who made the change
+          - change_type : filter by field_changed (status, priority, assigned_to, due_date, title, description)
+          - limit       : number of results to return (default: 50, max: 200)
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogsResponse'
+          description: ''
+  /api/v1/dashboard/admin/projects/:
+    get:
+      operationId: v1_dashboard_admin_projects_list
+      description: |-
+        GET  /dashboard/admin/projects/   — list all projects (search + status filter)
+        POST /dashboard/admin/projects/   — create a new project
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminProjectList'
+          description: ''
+    post:
+      operationId: v1_dashboard_admin_projects_create
+      description: |-
+        GET  /dashboard/admin/projects/   — list all projects (search + status filter)
+        POST /dashboard/admin/projects/   — create a new project
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminProjectWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminProjectWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminProjectWrite'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProjectList'
+          description: ''
+  /api/v1/dashboard/admin/projects/{id}/:
+    get:
+      operationId: v1_dashboard_admin_projects_retrieve
+      description: |-
+        GET    /dashboard/admin/projects/<pk>/  — project detail
+        PATCH  /dashboard/admin/projects/<pk>/  — update project fields
+        DELETE /dashboard/admin/projects/<pk>/  — delete project
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProjectList'
+          description: ''
+    patch:
+      operationId: v1_dashboard_admin_projects_partial_update
+      description: |-
+        GET    /dashboard/admin/projects/<pk>/  — project detail
+        PATCH  /dashboard/admin/projects/<pk>/  — update project fields
+        DELETE /dashboard/admin/projects/<pk>/  — delete project
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminProjectWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminProjectWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminProjectWrite'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProjectList'
+          description: ''
+    delete:
+      operationId: v1_dashboard_admin_projects_destroy
+      description: |-
+        GET    /dashboard/admin/projects/<pk>/  — project detail
+        PATCH  /dashboard/admin/projects/<pk>/  — update project fields
+        DELETE /dashboard/admin/projects/<pk>/  — delete project
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/dashboard/admin/projects/{id}/members/:
+    get:
+      operationId: v1_dashboard_admin_projects_members_retrieve
+      description: Returns all members for a specific project.
+      summary: Get project members
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: pk
+        schema:
+          type: integer
+        description: Project ID
+        required: true
+      tags:
+      - Dashboard - Admin Projects
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProjectMembersSuccessResponse'
+              examples:
+                SuccessExample:
+                  value:
+                    success: true
+                    message: Project members retrieved successfully.
+                    data:
+                      project_id: 12
+                      project_name: Website Redesign
+                      member_count: 2
+                      members:
+                      - id: 5
+                        username: john
+                        full_name: John Doe
+                        avatar: http://localhost:8000/media/avatars/john.png
+                        role: Developer
+                      - id: 9
+                        username: mary
+                        full_name: Mary Jane
+                        avatar: null
+                        role: Project Manager
+                  summary: Success Example
+          description: Project members retrieved successfully.
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProjectMembersNotFoundResponse'
+              examples:
+                NotFoundExample:
+                  value:
+                    success: false
+                    error:
+                      code: NOT_FOUND
+                      message: Project not found.
+                  summary: Not Found Example
+          description: Project not found.
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProjectMembersForbiddenResponse'
+          description: Forbidden.
+  /api/v1/dashboard/admin/tasks/:
+    get:
+      operationId: v1_dashboard_admin_tasks_retrieve
+      description: |-
+        GET /dashboard/admin/tasks/
+        Returns platform-wide (Admin) or project-scoped (Project Manager) task list
+        plus summary stats shown in the two cards at the top of the Tasks tab.
+
+        Query params:
+          - search   : filters by task title or project name
+          - status   : exact match against StatusEnum (TO_DO, IN_PROGRESS, IN_REVIEW, DONE)
+          - priority : exact match against PriorityEnum (LOW, MEDIUM, HIGH)
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTasksResponse'
+          description: ''
+  /api/v1/dashboard/admin/tasks/{id}/:
+    get:
+      operationId: v1_dashboard_admin_tasks_retrieve_2
+      description: |-
+        PATCH  /dashboard/admin/tasks/<pk>/
+            Update a task's status, priority, or assignee.
+            Admin: any task. Project Manager: only tasks in their projects.
+
+        DELETE /dashboard/admin/tasks/<pk>/
+            Delete a task.
+            Admin: any task. Project Manager: only tasks in their projects.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTaskDetail'
+          description: ''
+    patch:
+      operationId: v1_dashboard_admin_tasks_partial_update
+      description: |-
+        PATCH  /dashboard/admin/tasks/<pk>/
+            Update a task's status, priority, or assignee.
+            Admin: any task. Project Manager: only tasks in their projects.
+
+        DELETE /dashboard/admin/tasks/<pk>/
+            Delete a task.
+            Admin: any task. Project Manager: only tasks in their projects.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTaskUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTaskUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminTaskUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminTaskList'
+          description: ''
+    delete:
+      operationId: v1_dashboard_admin_tasks_destroy
+      description: |-
+        PATCH  /dashboard/admin/tasks/<pk>/
+            Update a task's status, priority, or assignee.
+            Admin: any task. Project Manager: only tasks in their projects.
+
+        DELETE /dashboard/admin/tasks/<pk>/
+            Delete a task.
+            Admin: any task. Project Manager: only tasks in their projects.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/dashboard/admin/users/:
+    get:
+      operationId: v1_dashboard_admin_users_list
+      description: GET  /dashboard/admin/users/  — list all users with search & filters
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AdminUser'
+          description: ''
+  /api/v1/dashboard/admin/users/{id}/:
+    get:
+      operationId: v1_dashboard_admin_users_retrieve
+      description: |-
+        GET    /dashboard/admin/users/<pk>/  — user detail
+        PATCH  /dashboard/admin/users/<pk>/  — update role and/or active status
+        DELETE /dashboard/admin/users/<pk>/  — delete user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    patch:
+      operationId: v1_dashboard_admin_users_partial_update
+      description: |-
+        GET    /dashboard/admin/users/<pk>/  — user detail
+        PATCH  /dashboard/admin/users/<pk>/  — update role and/or active status
+        DELETE /dashboard/admin/users/<pk>/  — delete user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUserUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUserUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAdminUserUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUser'
+          description: ''
+    delete:
+      operationId: v1_dashboard_admin_users_destroy
+      description: |-
+        GET    /dashboard/admin/users/<pk>/  — user detail
+        PATCH  /dashboard/admin/users/<pk>/  — update role and/or active status
+        DELETE /dashboard/admin/users/<pk>/  — delete user
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
         required: true
       tags:
       - v1
@@ -623,22 +1681,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/projects/{id}/members/:
-    post:
-      operationId: v1_projects_members_create
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-        required: true
-      tags:
-      - v1
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          description: No response body
   /api/v1/projects/{id}/tasks/:
     get:
       operationId: v1_projects_tasks_list
@@ -708,9 +1750,201 @@ paths:
               schema:
                 $ref: '#/components/schemas/Task'
           description: ''
+  /api/v1/projects/{id}/team/invite/:
+    post:
+      operationId: v1_projects_team_invite_create
+      description: Invite a team member to the project. Only Admins and Project Managers
+        can invite members.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteTeamMember'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InviteTeamMember'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InviteTeamMember'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberDetail'
+          description: ''
+        '400':
+          description: Bad Request - Invalid data or user already in project
+        '403':
+          description: Forbidden - Insufficient permissions
+        '404':
+          description: User or Project not found
+  /api/v1/projects/{id}/team/leave/:
+    post:
+      operationId: v1_projects_team_leave_create
+      description: Leave a project team. Project creators cannot leave their own projects.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: Successfully left the project
+        '400':
+          description: Bad Request - Cannot leave if you're the creator
+  /api/v1/projects/{id}/team/members/:
+    get:
+      operationId: v1_projects_team_members_list
+      description: List all team members for a specific project with optional filtering
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: role
+        schema:
+          type: string
+        description: Filter by role (Admin, Project Manager, Developer, Guest)
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Search by username, first name, last name, or email
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectMemberDetail'
+          description: ''
+        '403':
+          description: Forbidden - Insufficient permissions
+  /api/v1/projects/{id}/team/members/{member_id}/:
+    delete:
+      operationId: v1_projects_team_members_destroy
+      description: Remove a team member from the project. Only Admins and Project
+        Managers can remove members.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: member_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: Member removed successfully
+        '403':
+          description: Forbidden - Insufficient permissions
+        '404':
+          description: Member not found
+  /api/v1/projects/{id}/team/members/{member_id}/role/:
+    patch:
+      operationId: v1_projects_team_members_role_partial_update
+      description: Update a team member's role in the project. Only Admins and Project
+        Managers can update roles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: member_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateMemberRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateMemberRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUpdateMemberRole'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectMemberDetail'
+          description: ''
+        '400':
+          description: Bad Request
+        '403':
+          description: Forbidden - Insufficient permissions
+        '404':
+          description: Member not found
+  /api/v1/projects/{id}/team/stats/:
+    get:
+      operationId: v1_projects_team_stats_retrieve
+      description: Get statistics about the project team
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamStats'
+          description: ''
   /api/v1/tasks/:
     get:
       operationId: v1_tasks_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this task.
+        required: true
       tags:
       - v1
       security:
@@ -727,6 +1961,13 @@ paths:
     post:
       operationId: v1_tasks_create
       description: Create a new task using the task service
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this task.
+        required: true
       tags:
       - v1
       requestBody:
@@ -758,7 +1999,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -778,7 +2020,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -810,7 +2053,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -840,7 +2084,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -857,7 +2102,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -889,7 +2135,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -909,7 +2156,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -942,7 +2190,8 @@ paths:
       - in: path
         name: id
         schema:
-          type: string
+          type: integer
+        description: A unique integer value identifying this task.
         required: true
       tags:
       - v1
@@ -957,6 +2206,480 @@ paths:
           description: ''
 components:
   schemas:
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        actor:
+          $ref: '#/components/schemas/DashboardUser'
+        action_type:
+          $ref: '#/components/schemas/ActivityActionTypeEnum'
+        description:
+          type: string
+        target_name:
+          type: string
+        target_id:
+          type: integer
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - action_type
+      - actor
+      - description
+      - id
+      - target_id
+      - target_name
+      - timestamp
+    ActivityActionTypeEnum:
+      enum:
+      - task_completed
+      - comment_added
+      - member_joined
+      - task_updated
+      type: string
+      description: |-
+        * `task_completed` - task_completed
+        * `comment_added` - comment_added
+        * `member_joined` - member_joined
+        * `task_updated` - task_updated
+    AdminActivity:
+      type: object
+      properties:
+        id:
+          type: integer
+        action_type:
+          $ref: '#/components/schemas/AdminActivityActionTypeEnum'
+        description:
+          type: string
+        actor_name:
+          type: string
+        actor_url:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - action_type
+      - actor_name
+      - actor_url
+      - description
+      - id
+      - timestamp
+    AdminActivityActionTypeEnum:
+      enum:
+      - user_registered
+      - task_completed
+      - comment_added
+      - task_updated
+      type: string
+      description: |-
+        * `user_registered` - user_registered
+        * `task_completed` - task_completed
+        * `comment_added` - comment_added
+        * `task_updated` - task_updated
+    AdminProjectList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project_name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusAb7Enum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date
+          readOnly: true
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/AdminProjectOwner'
+          readOnly: true
+        members:
+          type: string
+          readOnly: true
+        member_count:
+          type: integer
+          readOnly: true
+        tasks_completed:
+          type: integer
+          readOnly: true
+        tasks_total:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - end_date
+      - id
+      - member_count
+      - members
+      - owner
+      - priority
+      - project_name
+      - status
+      - tasks_completed
+      - tasks_total
+    AdminProjectMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+      required:
+      - avatar
+      - id
+      - role
+      - username
+    AdminProjectMembersData:
+      type: object
+      properties:
+        project_id:
+          type: integer
+        project_name:
+          type: string
+        member_count:
+          type: integer
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminProjectMember'
+      required:
+      - member_count
+      - members
+      - project_id
+      - project_name
+    AdminProjectMembersForbiddenError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+      - code
+      - message
+    AdminProjectMembersForbiddenResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        error:
+          $ref: '#/components/schemas/AdminProjectMembersForbiddenError'
+      required:
+      - error
+    AdminProjectMembersNotFoundError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      required:
+      - code
+      - message
+    AdminProjectMembersNotFoundResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: false
+        error:
+          $ref: '#/components/schemas/AdminProjectMembersNotFoundError'
+      required:
+      - error
+    AdminProjectMembersSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          default: true
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminProjectMembersData'
+      required:
+      - data
+      - message
+    AdminProjectOwner:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          readOnly: true
+      required:
+      - avatar
+      - full_name
+      - id
+      - username
+    AdminProjectWrite:
+      type: object
+      properties:
+        project_name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusAb7Enum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+      required:
+      - end_date
+      - priority
+      - project_name
+      - status
+    AdminQuickActions:
+      type: object
+      properties:
+        overdue_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/OverdueTask'
+        unassigned_tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnassignedTask'
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminActivity'
+      required:
+      - overdue_tasks
+      - recent_activity
+      - unassigned_tasks
+    AdminTaskDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        project_id:
+          type: integer
+          readOnly: true
+        project_name:
+          type: string
+          readOnly: true
+        assignee:
+          type: string
+          readOnly: true
+        status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Status4deEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        priority:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        comments_count:
+          type: string
+          readOnly: true
+        comments:
+          type: string
+          readOnly: true
+      required:
+      - assignee
+      - comments
+      - comments_count
+      - created_at
+      - id
+      - project_id
+      - project_name
+      - title
+      - updated_at
+    AdminTaskList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        project_id:
+          type: integer
+          readOnly: true
+        project_name:
+          type: string
+          readOnly: true
+        assignee:
+          type: string
+          readOnly: true
+        status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Status4deEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        priority:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        is_overdue:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assignee
+      - created_at
+      - id
+      - is_overdue
+      - project_id
+      - project_name
+      - title
+      - updated_at
+    AdminTaskStats:
+      type: object
+      properties:
+        overdue_count:
+          type: integer
+        unassigned_count:
+          type: integer
+      required:
+      - overdue_count
+      - unassigned_count
+    AdminTasksResponse:
+      type: object
+      properties:
+        stats:
+          $ref: '#/components/schemas/AdminTaskStats'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminTaskList'
+      required:
+      - stats
+      - tasks
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        avatar:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        registered_on:
+          type: string
+          format: date-time
+          readOnly: true
+        project_count:
+          type: integer
+          readOnly: true
+        task_count:
+          type: integer
+          readOnly: true
+      required:
+      - avatar
+      - id
+      - project_count
+      - registered_on
+      - role
+      - status
+      - task_count
+      - username
     AssignedUser:
       type: object
       properties:
@@ -975,17 +2698,100 @@ components:
           readOnly: true
         role:
           type: string
+          description: Return users primary role
           readOnly: true
       required:
       - avatar
       - id
       - role
       - username
+    AuditLog:
+      type: object
+      description: Serializer for audit log entries showing task history changes
+      properties:
+        id:
+          type: integer
+        actor:
+          $ref: '#/components/schemas/AuditLogUser'
+        action_type:
+          type: string
+        description:
+          type: string
+        task_id:
+          type: integer
+          nullable: true
+        task_title:
+          type: string
+        project_id:
+          type: integer
+          nullable: true
+        project_name:
+          type: string
+        field_changed:
+          type: string
+        old_value:
+          type: string
+          nullable: true
+        new_value:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+      - action_type
+      - actor
+      - description
+      - field_changed
+      - id
+      - new_value
+      - old_value
+      - project_id
+      - project_name
+      - task_id
+      - task_title
+      - timestamp
+    AuditLogUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        full_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          readOnly: true
+      required:
+      - avatar
+      - full_name
+      - id
+      - username
+    AuditLogsResponse:
+      type: object
+      description: Response wrapper for audit logs endpoint
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        total_count:
+          type: integer
+      required:
+      - logs
+      - total_count
     BlankEnum:
       enum:
       - ''
     CalendarEvent:
       type: object
+      description: Main calendar event serializer with linked tasks and project details
       properties:
         id:
           type: integer
@@ -996,11 +2802,7 @@ components:
         description:
           type: string
         event_type:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/EventTypeEnum'
-          - $ref: '#/components/schemas/BlankEnum'
-          - $ref: '#/components/schemas/NullEnum'
+          $ref: '#/components/schemas/EventTypeEnum'
         priority:
           nullable: true
           oneOf:
@@ -1016,14 +2818,101 @@ components:
         end_time:
           type: string
           format: time
+        linked_task:
+          type: integer
+          nullable: true
+          description: Link this event to a specific task
+        linked_task_details:
+          allOf:
+          - $ref: '#/components/schemas/TaskSummary'
+          readOnly: true
+        linked_project:
+          type: integer
+          nullable: true
+          description: Link this event to a specific project
+        linked_project_details:
+          allOf:
+          - $ref: '#/components/schemas/ProjectSummary'
+          readOnly: true
+        is_recurring:
+          type: boolean
+        recurrence_pattern:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/RecurrencePatternEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        send_reminder:
+          type: boolean
+        reminder_minutes_before:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        username:
+          type: string
+          readOnly: true
+        is_overdue:
+          type: boolean
+          readOnly: true
+        duration_minutes:
+          type: integer
+          readOnly: true
         created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
           type: string
           format: date-time
           readOnly: true
       required:
       - created_at
+      - duration_minutes
       - id
+      - is_overdue
+      - linked_project_details
+      - linked_task_details
       - title
+      - updated_at
+      - username
+    CalendarView:
+      type: object
+      description: User calendar view preferences
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        default_view:
+          $ref: '#/components/schemas/DefaultViewEnum'
+        show_weekends:
+          type: boolean
+        show_tasks:
+          type: boolean
+        show_milestones:
+          type: boolean
+        show_meetings:
+          type: boolean
+        filtered_projects:
+          type: array
+          items:
+            type: integer
+        filtered_project_names:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - filtered_project_names
+      - id
+      - updated_at
     Comment:
       type: object
       properties:
@@ -1049,6 +2938,96 @@ components:
       - created_at
       - id
       - task
+    CustomTokenObtainPair:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+    Dashboard:
+      type: object
+      properties:
+        stats:
+          $ref: '#/components/schemas/DashboardStats'
+        project_progress:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectProgress'
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/Activity'
+        upcoming_deadlines:
+          type: array
+          items:
+            $ref: '#/components/schemas/UpcomingDeadline'
+      required:
+      - project_progress
+      - recent_activity
+      - stats
+      - upcoming_deadlines
+    DashboardStats:
+      type: object
+      properties:
+        total_tasks:
+          $ref: '#/components/schemas/TaskStat'
+        completed:
+          $ref: '#/components/schemas/TaskStat'
+        in_progress:
+          $ref: '#/components/schemas/TaskStat'
+        overdue:
+          $ref: '#/components/schemas/TaskStat'
+      required:
+      - completed
+      - in_progress
+      - overdue
+      - total_tasks
+    DashboardUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        avatar:
+          type: string
+          format: uri
+          readOnly: true
+      required:
+      - avatar
+      - id
+      - username
+    DefaultViewEnum:
+      enum:
+      - DAY
+      - WEEK
+      - MONTH
+      - AGENDA
+      type: string
+      description: |-
+        * `DAY` - Day
+        * `WEEK` - Week
+        * `MONTH` - Month
+        * `AGENDA` - Agenda
     EventTypeEnum:
       enum:
       - MEETING
@@ -1077,6 +3056,19 @@ components:
         * `due_date` - Due Date
         * `title` - Title
         * `description` - Description
+    InviteTeamMember:
+      type: object
+      description: Serializer for inviting a team member to a project
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          default: Developer
     LoginResponse:
       type: object
       properties:
@@ -1090,8 +3082,70 @@ components:
     NullEnum:
       enum:
       - null
+    OverdueTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        project_name:
+          type: string
+        due_date:
+          type: string
+          format: date
+        assigned_to:
+          allOf:
+          - $ref: '#/components/schemas/DashboardUser'
+          nullable: true
+      required:
+      - assigned_to
+      - due_date
+      - id
+      - project_name
+      - title
+    PatchedAdminProjectWrite:
+      type: object
+      properties:
+        project_name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/StatusAb7Enum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+    PatchedAdminTaskUpdate:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/Status4deEnum'
+        priority:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        assigned_to:
+          type: integer
+          nullable: true
+    PatchedAdminUserUpdate:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        is_active:
+          type: boolean
     PatchedCalendarEvent:
       type: object
+      description: Main calendar event serializer with linked tasks and project details
       properties:
         id:
           type: integer
@@ -1102,11 +3156,7 @@ components:
         description:
           type: string
         event_type:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/EventTypeEnum'
-          - $ref: '#/components/schemas/BlankEnum'
-          - $ref: '#/components/schemas/NullEnum'
+          $ref: '#/components/schemas/EventTypeEnum'
         priority:
           nullable: true
           oneOf:
@@ -1122,7 +3172,129 @@ components:
         end_time:
           type: string
           format: time
+        linked_task:
+          type: integer
+          nullable: true
+          description: Link this event to a specific task
+        linked_task_details:
+          allOf:
+          - $ref: '#/components/schemas/TaskSummary'
+          readOnly: true
+        linked_project:
+          type: integer
+          nullable: true
+          description: Link this event to a specific project
+        linked_project_details:
+          allOf:
+          - $ref: '#/components/schemas/ProjectSummary'
+          readOnly: true
+        is_recurring:
+          type: boolean
+        recurrence_pattern:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/RecurrencePatternEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        send_reminder:
+          type: boolean
+        reminder_minutes_before:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        username:
+          type: string
+          readOnly: true
+        is_overdue:
+          type: boolean
+          readOnly: true
+        duration_minutes:
+          type: integer
+          readOnly: true
         created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedCalendarView:
+      type: object
+      description: User calendar view preferences
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        default_view:
+          $ref: '#/components/schemas/DefaultViewEnum'
+        show_weekends:
+          type: boolean
+        show_tasks:
+          type: boolean
+        show_milestones:
+          type: boolean
+        show_meetings:
+          type: boolean
+        filtered_projects:
+          type: array
+          items:
+            type: integer
+        filtered_project_names:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedProjectMilestone:
+      type: object
+      description: Project milestone serializer
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: integer
+        project_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        due_date:
+          type: string
+          format: date
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        status:
+          $ref: '#/components/schemas/Status4deEnum'
+        create_calendar_event:
+          type: boolean
+        created_by:
+          type: integer
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        is_overdue:
+          type: boolean
+          readOnly: true
+        days_until_due:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
           type: string
           format: date-time
           readOnly: true
@@ -1145,6 +3317,25 @@ components:
         end_date:
           type: string
           format: date
+    PatchedTaskDeadlineSync:
+      type: object
+      description: Task deadline sync configuration
+      properties:
+        task:
+          type: integer
+        task_title:
+          type: string
+          readOnly: true
+        task_due_date:
+          type: string
+          format: date
+          readOnly: true
+        auto_sync_enabled:
+          type: boolean
+        last_synced:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedTaskDetail:
       type: object
       properties:
@@ -1180,11 +3371,6 @@ components:
         project:
           allOf:
           - $ref: '#/components/schemas/ProjectInfo'
-          readOnly: true
-        comments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Comment'
           readOnly: true
         created_by:
           allOf:
@@ -1222,6 +3408,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/ProjectInfo'
           readOnly: true
+    PatchedUpdateMemberRole:
+      type: object
+      description: Serializer for updating a member's role in a project
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
     PatchedUser:
       type: object
       properties:
@@ -1336,6 +3528,155 @@ components:
       - id
       - role
       - username
+    ProjectMemberDetail:
+      type: object
+      description: Detailed serializer for project members
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        avatar:
+          type: string
+          readOnly: true
+        role:
+          type: string
+          readOnly: true
+        is_online:
+          type: string
+          readOnly: true
+        task_count:
+          type: string
+          readOnly: true
+      required:
+      - avatar
+      - email
+      - first_name
+      - id
+      - is_online
+      - last_name
+      - role
+      - task_count
+      - username
+    ProjectMilestone:
+      type: object
+      description: Project milestone serializer
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project:
+          type: integer
+        project_name:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        due_date:
+          type: string
+          format: date
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        status:
+          $ref: '#/components/schemas/Status4deEnum'
+        create_calendar_event:
+          type: boolean
+        created_by:
+          type: integer
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+        is_overdue:
+          type: boolean
+          readOnly: true
+        days_until_due:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by_username
+      - days_until_due
+      - due_date
+      - id
+      - is_overdue
+      - project
+      - project_name
+      - title
+      - updated_at
+    ProjectProgress:
+      type: object
+      properties:
+        id:
+          type: integer
+        project_name:
+          type: string
+        total_tasks:
+          type: integer
+        completed_tasks:
+          type: integer
+        progress_pct:
+          type: number
+          format: double
+      required:
+      - completed_tasks
+      - id
+      - progress_pct
+      - project_name
+      - total_tasks
+    ProjectSummary:
+      type: object
+      description: Minimal project info for calendar display
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        project_name:
+          type: string
+          maxLength: 100
+        status:
+          $ref: '#/components/schemas/StatusAb7Enum'
+        priority:
+          $ref: '#/components/schemas/PriorityEnum'
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        created_by_username:
+          type: string
+          readOnly: true
+      required:
+      - created_by_username
+      - end_date
+      - id
+      - priority
+      - project_name
+      - status
     ProjectWrite:
       type: object
       properties:
@@ -1409,6 +3750,28 @@ components:
       - project_name
       - status
       - updated_at
+    RecurrencePatternEnum:
+      enum:
+      - DAILY
+      - WEEKLYWeekly
+      - MONTHLYMonthly
+      type: string
+      description: |-
+        * `DAILY` - Daily
+        * `WEEKLYWeekly` - Weekly
+        * `MONTHLYMonthly` - Monthly
+    RoleEnum:
+      enum:
+      - Admin
+      - Project Manager
+      - Developer
+      - Guest
+      type: string
+      description: |-
+        * `Admin` - Admin
+        * `Project Manager` - Project Manager
+        * `Developer` - Developer
+        * `Guest` - Guest
     Status4deEnum:
       enum:
       - TO_DO
@@ -1496,6 +3859,30 @@ components:
       - project
       - title
       - updated_at
+    TaskDeadlineSync:
+      type: object
+      description: Task deadline sync configuration
+      properties:
+        task:
+          type: integer
+        task_title:
+          type: string
+          readOnly: true
+        task_due_date:
+          type: string
+          format: date
+          readOnly: true
+        auto_sync_enabled:
+          type: boolean
+        last_synced:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - last_synced
+      - task
+      - task_due_date
+      - task_title
     TaskDetail:
       type: object
       properties:
@@ -1532,18 +3919,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/ProjectInfo'
           readOnly: true
-        comments:
-          type: array
-          items:
-            $ref: '#/components/schemas/Comment'
-          readOnly: true
         created_by:
           allOf:
           - $ref: '#/components/schemas/AssignedUser'
           readOnly: true
       required:
       - assigned_to
-      - comments
       - created_by
       - id
       - project
@@ -1616,6 +3997,55 @@ components:
       - id
       - project
       - title
+    TaskStat:
+      type: object
+      properties:
+        total:
+          type: integer
+        change_pct:
+          type: number
+          format: double
+          nullable: true
+      required:
+      - change_pct
+      - total
+    TaskSummary:
+      type: object
+      description: Minimal task info for calendar display
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 100
+        status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/Status4deEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        priority:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        project_name:
+          type: string
+          readOnly: true
+        assigned_to_username:
+          type: string
+          readOnly: true
+      required:
+      - assigned_to_username
+      - id
+      - project_name
+      - title
     TaskWrite:
       type: object
       properties:
@@ -1675,26 +4105,6 @@ components:
       required:
       - access
       - refresh
-    TokenObtainPair:
-      type: object
-      properties:
-        username:
-          type: string
-          writeOnly: true
-        password:
-          type: string
-          writeOnly: true
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-          readOnly: true
-      required:
-      - access
-      - password
-      - refresh
-      - username
     TokenRefresh:
       type: object
       properties:
@@ -1714,6 +4124,48 @@ components:
           writeOnly: true
       required:
       - token
+    UnassignedTask:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        project_name:
+          type: string
+        priority:
+          type: string
+          nullable: true
+      required:
+      - id
+      - priority
+      - project_name
+      - title
+    UpcomingDeadline:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        project_name:
+          type: string
+        due_date:
+          type: string
+          format: date
+        priority:
+          type: string
+        assigned_to:
+          allOf:
+          - $ref: '#/components/schemas/DashboardUser'
+          nullable: true
+      required:
+      - assigned_to
+      - due_date
+      - id
+      - priority
+      - project_name
+      - title
     User:
       type: object
       properties:

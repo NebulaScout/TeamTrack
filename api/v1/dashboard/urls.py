@@ -12,6 +12,7 @@ from .views.admin_views import (
     AdminTaskDetailView,
     AdminTasksView,
     AdminAuditLogsView,
+    AdminProjectMembersView,
 )
 
 
@@ -35,5 +36,10 @@ urlpatterns = [
     path("admin/audit-logs/", AdminAuditLogsView.as_view(), name="admin-audit-logs"),
     path(
         "admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"
+    ),
+    path(
+        "admin/projects/<int:pk>/members/",
+        AdminProjectMembersView.as_view(),
+        name="admin-project-members",
     ),
 ]

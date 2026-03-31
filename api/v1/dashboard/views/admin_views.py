@@ -1,9 +1,15 @@
 from datetime import timedelta
-from rest_framework import status
+from rest_framework import status, serializers
+from drf_spectacular.utils import (
+    extend_schema,
+    inline_serializer,
+    OpenApiResponse,
+    OpenApiParameter,
+    OpenApiExample,
+)
 
 from django.db.models import Count, Q
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -26,8 +32,45 @@ from ..serializers.admin_serializers import (
     AdminTaskUpdateSerializer,
     AdminQuickActionsSerializer,
     AdminTaskDetailSerializer,
+    AdminProjectMemberSerializer,
 )
 from ..serializers.user_serializers import DashboardSerializer
+
+
+class AdminProjectMembersView(ResponseMixin, APIView):
+    """
+    GET /dashboard/admin/projects/<int:pk>/members/
+    Returns members for a specific project
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminUser]
+
+    @extend_schema(responses=AdminProjectMemberSerializer)
+    def get(self, request, pk):
+        try:
+            project = ProjectsModel.objects.prefetch_related(
+                "members",
+                "members__project_member",
+                "members__project_member__profile",
+            ).get(pk=pk)
+        except ProjectsModel.DoesNotExist:
+            return self._error(
+                code="NOT_FOUND",
+                message="Project not found.",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        memberships = project.members.all()
+        serializer = AdminProjectMemberSerializer(
+            memberships, many=True, context={"request": request}
+        )
+
+        return self._success(
+            data=serializer.data,
+            message="Project members retrieved successfully.",
+            status_code=status.HTTP_200_OK,
+        )
 
 
 class AdminQuickActionsView(ResponseMixin, APIView):
@@ -85,6 +128,7 @@ class AdminQuickActionsView(ResponseMixin, APIView):
             {
                 "id": task.pk,
                 "title": task.title,
+                "project_id": task.project.pk,
                 "project_name": task.project.project_name,
                 "priority": task.priority,
             }

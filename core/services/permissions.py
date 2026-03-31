@@ -70,6 +70,9 @@ class ProjectPermissions(permissions.BasePermission):
         if not request.user.is_authenticated:
             return False
 
+        if request.user.is_staff or request.user.is_superuser:
+            return True
+
         user_groups = request.user.groups.values_list("name", flat=True)
 
         permissions_map = {
@@ -82,11 +85,11 @@ class ProjectPermissions(permissions.BasePermission):
             "destroy": "delete_projectsmodel",
             "add_members": "add_projectmembers",
             "tasks": "add_taskmodel",
-            "invite_team_member": "invite_team_member",
-            "list_team_members": "list_team_members",
-            "team_stats": "team_stats",
-            "update_member_role": "update_member_role",
-            "remove_team_member": "remove_team_member",
+            "invite_team_member": "add_projectmembers",
+            "list_team_members": "add_projectmembers",
+            "team_stats": "add_projectmembers",
+            "update_member_role": "change_projectmembers",
+            "remove_team_member": "delete_projectmembers",
             "leave_project": "leave_project",
         }
 
@@ -103,6 +106,9 @@ class ProjectPermissions(permissions.BasePermission):
         """Object-level permissons for projects
         Creator of the project always has access, or user must have the appropriate permissions
         """
+
+        if request.user.is_staff or request.user.is_superuser:
+            return True
 
         # Project creator has full access
         if obj.created_by == request.user:
@@ -134,14 +140,22 @@ class ProjectPermissions(permissions.BasePermission):
             except ProjectMembers.DoesNotExist:
                 return False
 
-        # For viewing team members, any project member can view
+        # Team visibility: Admin or Project Manager only
         if view.action in ["list_team_members", "team_stats"]:
-            return ProjectMembers.objects.filter(
-                project=obj, project_member=request.user
-            ).exists() or any(
-                "view_projectmembers" in ROLE_PERMISSIONS.get(group, [])
+            has_global_permission = any(
+                "add_projectmembers" in ROLE_PERMISSIONS.get(group, [])
                 for group in user_groups
             )
+            if has_global_permission:
+                return True
+
+            try:
+                membership = ProjectMembers.objects.get(
+                    project=obj, project_member=request.user
+                )
+                return membership.role_in_project in ["Admin", "Project Manager"]
+            except ProjectMembers.DoesNotExist:
+                return False
 
         # For leaving project, any member can leave
         if view.action == "leave_project":
@@ -207,6 +221,9 @@ class TaskPermissions(permissions.BasePermission):
         """Object-level permissons for tasks
         Creator of the task always has access, or user must have the appropriate permissions
         """
+
+        if request.user.is_staff or request.user.is_superuser:
+            return True
 
         # Task creator has full access
         if obj.created_by == request.user:
