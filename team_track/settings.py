@@ -34,7 +34,15 @@ SECRET_KEY = env("SECRET_KEY")
 DEBUG = env.bool("DEBUG") if "DEBUG" in os.environ else False
 
 BASE_URL = env("BASE_URL")
-ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+# ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = (
+    env.list("ALLOWED_HOSTS")
+    if "ALLOWED_HOSTS" in os.environ
+    else ["127.0.0.1", "localhost"]
+)
+CSRF_TRUSTED_ORIGINS = (
+    env.list("CSRF_TRUSTED_ORIGINS") if "CSRF_TRUSTED_ORIGINS" in os.environ else []
+)
 
 # CSRF_COOKIE_SECURE = True # Ensure CSRF cookie is only sent over HTTPS
 # SESSION_COOKIE_SECURE = True # Ensure session cookie is only sent over HTTPS
@@ -78,6 +86,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -206,4 +215,13 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+}
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
 }
