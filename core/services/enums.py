@@ -58,6 +58,8 @@ class RecurrenceEnums(models.TextChoices):
 
 
 class AuditModule(models.TextChoices):
+    """Modules being logged"""
+
     PROJECT = "project", "Project"
     TASK = "task", "Task"
     USER = "user", "User"
@@ -66,6 +68,8 @@ class AuditModule(models.TextChoices):
 
 
 class AuditAction(models.TextChoices):
+    """User actions"""
+
     CREATED = "created", "Created"
     UPDATED = "updated", "Updated"
     DELETED = "deleted", "Deleted"
