@@ -11,6 +11,7 @@ from django.contrib.auth.models import User
 
 from api.v1.common.responses import ResponseMixin
 from core.services.enums import StatusEnum
+from core.services.task_service import TaskService
 from projects.models import ProjectsModel
 from tasks.models import TaskHistoryModel, TaskModel
 from accounts.models import RegisterModel
@@ -325,6 +326,10 @@ class AdminTaskDetailView(ResponseMixin, APIView):
                 "You do not have access to this task.",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
+        if task is None:
+            return self._error(
+                "NOT_FOUND", "Task not found.", status_code=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = AdminTaskUpdateSerializer(data=request.data, partial=True)
         if not serializer.is_valid():
@@ -336,38 +341,44 @@ class AdminTaskDetailView(ResponseMixin, APIView):
             )
 
         data = serializer.validated_data or {}
+        update_payload = {}
 
-        if task:
-            if isinstance(data, dict) and "status" in data:
-                task.status = data["status"]
-            if isinstance(data, dict) and "priority" in data:
-                task.priority = data["priority"]
-            if isinstance(data, dict) and "assigned_to" in data:
-                if data["assigned_to"] is None:
-                    task.assigned_to = None
-                else:
-                    try:
-                        new_assignee = User.objects.get(pk=data["assigned_to"])
-                    except User.DoesNotExist:
-                        return self._error(
-                            "NOT_FOUND",
-                            "Assigned user not found.",
-                            status_code=status.HTTP_404_NOT_FOUND,
-                        )
-                    task.assigned_to = new_assignee
+        if isinstance(data, dict) and "status" in data:
+            update_payload["status"] = data["status"]
 
-            task.save()
+        if isinstance(data, dict) and "priority" in data:
+            update_payload["priority"] = data["priority"]
 
-            updated_task = TaskModel.objects.select_related(
-                "project", "assigned_to", "assigned_to__profile"
-            ).get(pk=task.pk)
+        if isinstance(data, dict) and "assigned_to" in data:
+            assigned_id = data["assigned_to"]
+            if assigned_id is None:
+                update_payload["assigned_to"] = None
+            else:
+                try:
+                    update_payload["assigned_to"] = User.objects.get(pk=assigned_id)
+                except User.DoesNotExist:
+                    return self._error(
+                        "NOT_FOUND",
+                        "Assigned user not found.",
+                        status_code=status.HTTP_404_NOT_FOUND,
+                    )
 
-            return self._success(
-                data=AdminTaskListSerializer(
-                    updated_task, context={"request": request}
-                ).data,
-                message="Task updated successfully.",
-            )
+        updated_task = TaskService.update_task(
+            user=request.user,
+            task_id=task.pk,
+            data=update_payload,
+        )
+
+        updated_task = TaskModel.objects.select_related(
+            "project", "assigned_to", "assigned_to__profile"
+        ).get(pk=updated_task.pk)
+
+        return self._success(
+            data=AdminTaskListSerializer(
+                updated_task, context={"request": request}
+            ).data,
+            message="Task updated successfully.",
+        )
 
     def delete(self, request, pk):
         user = request.user

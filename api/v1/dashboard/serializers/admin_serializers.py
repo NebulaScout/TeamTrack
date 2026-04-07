@@ -174,9 +174,9 @@ class AdminProjectListSerializer(serializers.ModelSerializer):
         ]
 
     def get_members(self, obj):
-        member_users = [m.project_member for m in obj.members.all()]
+        memberships = obj.members.all()
         return AdminProjectMemberSerializer(
-            member_users, many=True, context=self.context
+            memberships, many=True, context=self.context
         ).data
 
 
@@ -399,3 +399,21 @@ class AdminTaskDetailSerializer(serializers.ModelSerializer):
 
     def get_comments_count(self, obj):
         return obj.comments.count()
+
+
+class AdminTaskLogSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    actor = AuditLogUserSerializer(allow_null=True)
+    action_type = serializers.CharField()
+    description = serializers.CharField()
+    field_changed = serializers.CharField()
+    old_value = serializers.CharField(allow_null=True)
+    new_value = serializers.CharField(allow_null=True)
+    timestamp = serializers.DateTimeField()
+
+
+class AdminTaskLogsResponseSerializer(serializers.Serializer):
+    task_id = serializers.IntegerField()
+    task_title = serializers.CharField()
+    logs = AdminTaskLogSerializer(many=True)
+    total_count = serializers.IntegerField()
