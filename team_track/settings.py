@@ -80,6 +80,7 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "tasks.apps.TasksConfig",
     "Calendar.apps.CalendarConfig",
+    "audit.apps.AuditConfig",
 ]
 
 MIDDLEWARE = [
