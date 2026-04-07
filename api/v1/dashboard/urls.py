@@ -1,19 +1,18 @@
 from django.urls import path
 
-from .views.users_views import (
-    DashboardView,
-)
-from .views.admin_views import (
-    AdminQuickActionsView,
-    AdminUserDetailView,
-    AdminUsersView,
+from .views.users_views import DashboardView
+from .views.admin_users_views import AdminUsersView, AdminUserDetailView
+from .views.admin_projects_views import (
     AdminProjectsView,
     AdminProjectDetailView,
-    AdminTaskDetailView,
-    AdminTasksView,
-    AdminAuditLogsView,
     AdminProjectMembersView,
 )
+from .views.admin_tasks_views import (
+    AdminQuickActionsView,
+    AdminTasksView,
+    AdminTaskDetailView,
+)
+from .views.admin_audit_views import AdminAuditLogsView
 
 
 urlpatterns = [
@@ -29,17 +28,14 @@ urlpatterns = [
         AdminProjectDetailView.as_view(),
         name="admin-project-detail",
     ),
-    path("admin/tasks/", AdminTasksView.as_view(), name="admin-tasks"),
-    path(
-        "admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"
-    ),
-    path("admin/audit-logs/", AdminAuditLogsView.as_view(), name="admin-audit-logs"),
-    path(
-        "admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"
-    ),
     path(
         "admin/projects/<int:pk>/members/",
         AdminProjectMembersView.as_view(),
         name="admin-project-members",
     ),
+    path("admin/tasks/", AdminTasksView.as_view(), name="admin-tasks"),
+    path(
+        "admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"
+    ),
+    path("admin/audit-logs/", AdminAuditLogsView.as_view(), name="admin-audit-logs"),
 ]
