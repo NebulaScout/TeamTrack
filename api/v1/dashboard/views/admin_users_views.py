@@ -12,6 +12,8 @@ from ..serializers.admin_serializers import (
     AdminUserSerializer,
     AdminUserUpdateSerializer,
 )
+from core.services.audit_service import AuditService
+from core.services.enums import AuditModule
 
 
 class AdminUsersView(ResponseMixin, APIView):
@@ -110,6 +112,12 @@ class AdminUserDetailView(ResponseMixin, APIView):
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
+        first_group = user.groups.first() if user else None
+        before = {
+            "role": first_group.name if first_group else None,
+            "is_active": user.is_active,
+        }
+
         serializer = AdminUserUpdateSerializer(data=request.data, partial=True)
         if not serializer.is_valid():
             return self._error(
@@ -138,6 +146,30 @@ class AdminUserDetailView(ResponseMixin, APIView):
             user.save(update_fields=["is_active"])
 
         updated_user = self._get_user(pk)
+        first_group = updated_user.groups.first() if updated_user else None
+        after = {
+            "role": first_group.name if first_group else None,
+            "is_active": updated_user.is_active if updated_user else None,
+        }
+
+        changed_fields = {}
+        for field, old_value in before.items():
+            new_value = after.get(field)
+            if old_value != new_value:
+                changed_fields[field] = {"old": old_value, "new": new_value}
+
+        if changed_fields and updated_user:
+            AuditService.updated(
+                module=AuditModule.USER,
+                actor=request.user,
+                target=updated_user,
+                description=f'Updated user "{updated_user.username}"',
+                metadata={
+                    "user_id": updated_user.pk,
+                    "username": updated_user.username,
+                    "changes": changed_fields,
+                },
+            )
         return self._success(
             data=AdminUserSerializer(updated_user, context={"request": request}).data,
             message="User updated successfully.",

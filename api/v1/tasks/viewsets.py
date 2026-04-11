@@ -18,6 +18,8 @@ from tasks.models import TaskModel, CommentModel, TaskHistoryModel
 from core.services.roles import ROLE_PERMISSIONS
 from core.services.permissions import TaskPermissions
 from core.services.task_service import TaskService, CommentService
+from core.services.audit_service import AuditService
+from core.services.enums import AuditModule
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -150,6 +152,27 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Partial update a task with audit logging."""
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        task = self.get_object()
+
+        AuditService.deleted(
+            module=AuditModule.TASK,
+            actor=request.user,
+            target_type=TaskModel.__name__,
+            target_id=task.pk,
+            target_label=task.title,
+            project=task.project,
+            description=f'Deleted task "{task.title}"',
+            metadata={
+                "task_title": task.title,
+                "project_id": task.project_id,
+                "project_name": task.project.project_name if task.project else "",
+            },
+        )
+
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["patch"])
     def assign(self, request, pk=None):

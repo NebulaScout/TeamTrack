@@ -10,8 +10,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import User
 
 from api.v1.common.responses import ResponseMixin
-from core.services.enums import StatusEnum
+from core.services.enums import StatusEnum, AuditModule
 from core.services.task_service import TaskService
+from core.services.audit_service import AuditService
 from projects.models import ProjectsModel
 from tasks.models import TaskHistoryModel, TaskModel
 from accounts.models import RegisterModel
@@ -396,5 +397,22 @@ class AdminTaskDetailView(ResponseMixin, APIView):
             )
 
         if task:
+
+            AuditService.deleted(
+                module=AuditModule.TASK,
+                actor=user,
+                target_type=TaskModel.__name__,
+                target_id=task.pk,
+                target_label=task.title,
+                project=task.project,
+                description=f'Deleted task "{task.title}"',
+                metadata={
+                    "task_title": task.title,
+                    "project_id": task.project.pk if task.project else None,
+                    "project_name": task.project.project_name if task.project else "",
+                },
+            )
+
             task.delete()
+
         return self._success(message="Task deleted successfully.")

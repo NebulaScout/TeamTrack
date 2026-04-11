@@ -2,7 +2,8 @@ from django.contrib.auth.models import User
 
 from tasks.models import TaskModel, CommentModel, TaskHistoryModel
 from projects.models import ProjectsModel
-from .enums import TaskFieldEnum
+from core.services.audit_service import AuditService
+from .enums import TaskFieldEnum, AuditModule
 
 
 class TaskService:
@@ -45,11 +46,30 @@ class TaskService:
     @staticmethod
     def create_task(*, user, project_id, data):
         project = ProjectsModel.objects.get(id=project_id)
-        return TaskModel.objects.create(
+        task = TaskModel.objects.create(
             project=project,
             created_by=user,
             **data,
         )
+
+        AuditService.created(
+            module=AuditModule.TASK,
+            actor=user,
+            target=task,
+            project=project,
+            description=f'Created task "{task.title}"',
+            metadata={
+                "task_title": task.title,
+                "status": str(task.status) if task.status else "",
+                "priority": str(task.priority) if task.priority else "",
+                "assigned_to_id": task.assigned_to.pk if task.assigned_to else None,
+                "due_date": str(task.due_date) if task.due_date else "",
+                "project_id": project.pk,
+                "project_name": project.project_name,
+            },
+        )
+
+        return task
 
     @staticmethod
     def update_task(*, user, task_id, data):
