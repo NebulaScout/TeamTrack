@@ -218,6 +218,60 @@ class TaskViewSet(viewsets.ModelViewSet):
             serializer = CommentSerializer(comments, many=True)
             return Response(serializer.data)
 
+    @action(detail=True, methods=["delete"], url_path="comments/(?P<comment_id>[^/.]+)")
+    def delete_comment(self, request, pk=None, comment_id=None):
+        task = self.get_object()
+
+        try:
+            comment = CommentModel.objects.select_related("task", "task__project").get(
+                pk=comment_id, task=task
+            )
+        except CommentModel.DoesNotExist:
+            return Response(
+                {"error": "Comment not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Optional authorization rule:
+        # allow author, task creator, admin/staff to delete.
+        can_delete = (
+            request.user.is_staff
+            or request.user.is_superuser
+            or comment.author_id == request.user.id
+            or task.created_by_id == request.user.id
+        )
+        if not can_delete:
+            return Response(
+                {"error": "You do not have permission to delete this comment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        comment_id_value = comment.pk
+        content_preview = (comment.content or "")[:120]
+        task_title = task.title
+        project_ref = task.project
+
+        AuditService.deleted(
+            module=AuditModule.COMMENT,
+            actor=request.user,
+            target_type=CommentModel.__name__,
+            target_id=comment_id_value,
+            target_label=f"Comment {comment_id_value}",
+            project=project_ref,
+            description=f'Deleted comment on task "{task_title}"',
+            metadata={
+                "comment_id": comment_id_value,
+                "task_id": task.pk,
+                "task_title": task_title,
+                "project_id": project_ref.pk if project_ref else None,
+                "project_name": project_ref.project_name if project_ref else "",
+                "content_preview": content_preview,
+            },
+        )
+
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @action(detail=True, methods=["get"], url_path="logs")
     def task_logs(self, request, pk=None):
         """Manage task logs"""

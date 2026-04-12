@@ -169,8 +169,26 @@ class CommentService:
     @staticmethod
     def create_comment(*, user, task, data):
         task = TaskModel.objects.get(id=task.id)
-        return CommentModel.objects.create(
+        comment = CommentModel.objects.create(
             task=task,
             author=user,
             **data,
         )
+
+        AuditService.created(
+            module=AuditModule.COMMENT,
+            actor=user,
+            target=comment,
+            project=task.project,
+            description=f'Added comment on task "{task.title}"',
+            metadata={
+                "comment_id": comment.pk,
+                "task_id": task.pk,
+                "task_title": task.title,
+                "project_id": task.project.pk,
+                "project_name": task.project.project_name if task.project else "",
+                "content_preview": (comment.content or "")[:120],
+            },
+        )
+
+        return comment

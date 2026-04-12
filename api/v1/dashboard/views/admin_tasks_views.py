@@ -23,6 +23,7 @@ from ..serializers.admin_serializers import (
     AdminQuickActionsSerializer,
     AdminTaskDetailSerializer,
 )
+from audit.models import GlobalAuditLog
 
 
 class AdminQuickActionsView(ResponseMixin, APIView):
@@ -87,44 +88,27 @@ class AdminQuickActionsView(ResponseMixin, APIView):
 
         activities = []
 
-        registrations = (
-            RegisterModel.objects.filter(created_at__gte=week_ago)
-            .select_related("user")
-            .order_by("-created_at")[:20]
+        audit_entries = (
+            GlobalAuditLog.objects.filter(occurred_at__gte=week_ago)
+            .select_related("actor", "actor__profile")
+            .order_by("-occurred_at")[:20]
         )
-        for reg in registrations:
-            full_name = reg.user.get_full_name() or reg.user.username
-            activities.append(
-                {
-                    "id": reg.pk,
-                    "action_type": "user_registered",
-                    "description": "New user registered",
-                    "actor_name": full_name,
-                    "actor_url": None,
-                    "timestamp": reg.created_at,
-                }
-            )
 
-        completions = (
-            TaskHistoryModel.objects.filter(
-                field_changed="status",
-                new_value=StatusEnum.DONE,
-                timestamp__gte=week_ago,
-            )
-            .select_related("changed_by", "task")
-            .order_by("-timestamp")[:20]
-        )
-        for history in completions:
-            actor = history.changed_by
-            full_name = actor.get_full_name() if actor else "Unknown"
+        for entry in audit_entries:
+            actor = entry.actor
+            actor_name = "System"
+            if actor:
+                actor_name = actor.get_full_name() or actor.username
+
             activities.append(
                 {
-                    "id": history.pk,
-                    "action_type": "task_completed",
-                    "description": f"completed task \"{history.task.title if history.task else ''}\"",
-                    "actor_name": full_name or (actor.username if actor else "Unknown"),
+                    "id": entry.pk,
+                    "action_type": f"{entry.module}_{entry.action}",
+                    "description": entry.description
+                    or f"{entry.action} {entry.module}",
+                    "actor_name": actor_name,
                     "actor_url": None,
-                    "timestamp": history.timestamp,
+                    "timestamp": entry.occurred_at,
                 }
             )
 

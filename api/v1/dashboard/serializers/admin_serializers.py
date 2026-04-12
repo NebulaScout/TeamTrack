@@ -27,9 +27,7 @@ class UnassignedTaskSerializer(serializers.Serializer):
 
 class AdminActivitySerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    action_type = serializers.ChoiceField(
-        choices=["user_registered", "task_completed", "comment_added", "task_updated"]
-    )
+    action_type = serializers.CharField()  # e.g. user_registered, project_created
     description = serializers.CharField()
     actor_name = serializers.CharField()  # display name or username
     actor_url = serializers.CharField(allow_null=True)  # profile link if needed
@@ -292,22 +290,24 @@ class AuditLogUserSerializer(serializers.ModelSerializer):
 
 class AuditLogSerializer(serializers.Serializer):
     """
-    Serializer for audit log entries showing task history changes
+    Serializer for audit log entries showing all history changes
     """
 
     id = serializers.IntegerField()
-    actor = AuditLogUserSerializer()
-    action_type = (
-        serializers.CharField()
-    )  # 'changed_status', 'changed_priority', 'assigned', etc.
-    description = serializers.CharField()  # Human-readable description
-    task_id = serializers.IntegerField(allow_null=True)
-    task_title = serializers.CharField()
+    actor = AuditLogUserSerializer(allow_null=True)
+    module = serializers.CharField()  # project/task/user/comment/system
+    action = serializers.CharField()  # created/updated/deleted/registered
+    action_type = serializers.CharField()  # combined readable key
+    description = serializers.CharField()
+
+    target_type = serializers.CharField(allow_blank=True, allow_null=True)
+    target_id = serializers.IntegerField(allow_null=True)
+    target_label = serializers.CharField(allow_blank=True, allow_null=True)
+
     project_id = serializers.IntegerField(allow_null=True)
-    project_name = serializers.CharField()
-    field_changed = serializers.CharField()
-    old_value = serializers.CharField(allow_null=True)
-    new_value = serializers.CharField()
+    project_name = serializers.CharField(allow_blank=True, allow_null=True)
+
+    metadata = serializers.JSONField(required=False)
     timestamp = serializers.DateTimeField()
 
 
