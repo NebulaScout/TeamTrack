@@ -53,5 +53,24 @@ class RecurrenceEnums(models.TextChoices):
     """Calendar recurrence"""
 
     DAILY = "DAILY", "Daily"
-    WEEKLY = "WEEKLY" "Weekly"
-    MONTHLY = "MONTHLY" "Monthly"
+    WEEKLY = "WEEKLY", "Weekly"
+    MONTHLY = "MONTHLY", "Monthly"
+
+
+class AuditModule(models.TextChoices):
+    """Modules being logged"""
+
+    PROJECT = "project", "Project"
+    TASK = "task", "Task"
+    USER = "user", "User"
+    COMMENT = "comment", "Comment"
+    SYSTEM = "system", "System"
+
+
+class AuditAction(models.TextChoices):
+    """User actions"""
+
+    CREATED = "created", "Created"
+    UPDATED = "updated", "Updated"
+    DELETED = "deleted", "Deleted"
+    REGISTERED = "registered", "Registered"

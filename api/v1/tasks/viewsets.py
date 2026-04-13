@@ -18,6 +18,8 @@ from tasks.models import TaskModel, CommentModel, TaskHistoryModel
 from core.services.roles import ROLE_PERMISSIONS
 from core.services.permissions import TaskPermissions
 from core.services.task_service import TaskService, CommentService
+from core.services.audit_service import AuditService
+from core.services.enums import AuditModule
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -121,7 +123,6 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     # TODO: Implement PUT /api/v1/project/{project_id}/tasks/{task_id} — update a task (e.g., change description, due date)
     # TODO: GET /api/v1/projects/{project_id}/tasks?status=OPEN&assigned_to=12 - filtering
-    #! TODO: Get rid of the patches
 
     def retrieve(self, request, *args, **kwargs):
         """Get task details with comments"""
@@ -131,20 +132,47 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
-        """update a task"""
+        """Update a task with audit logging."""
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
+
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
 
-        output_serializer = TaskDetailSerializer(instance)
+        updated_task = TaskService.update_task(
+            user=request.user,
+            task_id=instance.id,
+            data=serializer.validated_data,
+        )
+
+        output_serializer = TaskDetailSerializer(updated_task)
         return Response(output_serializer.data)
 
     def partial_update(self, request, *args, **kwargs):
-        """Partial update a task"""
+        """Partial update a task with audit logging."""
         kwargs["partial"] = True
-        return self.partial_update(request, *args, **kwargs)
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        task = self.get_object()
+
+        AuditService.deleted(
+            module=AuditModule.TASK,
+            actor=request.user,
+            target_type=TaskModel.__name__,
+            target_id=task.pk,
+            target_label=task.title,
+            project=task.project,
+            description=f'Deleted task "{task.title}"',
+            metadata={
+                "task_title": task.title,
+                "project_id": task.project_id,
+                "project_name": task.project.project_name if task.project else "",
+            },
+        )
+
+        task.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["patch"])
     def assign(self, request, pk=None):
@@ -189,6 +217,60 @@ class TaskViewSet(viewsets.ModelViewSet):
 
             serializer = CommentSerializer(comments, many=True)
             return Response(serializer.data)
+
+    @action(detail=True, methods=["delete"], url_path="comments/(?P<comment_id>[^/.]+)")
+    def delete_comment(self, request, pk=None, comment_id=None):
+        task = self.get_object()
+
+        try:
+            comment = CommentModel.objects.select_related("task", "task__project").get(
+                pk=comment_id, task=task
+            )
+        except CommentModel.DoesNotExist:
+            return Response(
+                {"error": "Comment not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Optional authorization rule:
+        # allow author, task creator, admin/staff to delete.
+        can_delete = (
+            request.user.is_staff
+            or request.user.is_superuser
+            or comment.author_id == request.user.id
+            or task.created_by_id == request.user.id
+        )
+        if not can_delete:
+            return Response(
+                {"error": "You do not have permission to delete this comment."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        comment_id_value = comment.pk
+        content_preview = (comment.content or "")[:120]
+        task_title = task.title
+        project_ref = task.project
+
+        AuditService.deleted(
+            module=AuditModule.COMMENT,
+            actor=request.user,
+            target_type=CommentModel.__name__,
+            target_id=comment_id_value,
+            target_label=f"Comment {comment_id_value}",
+            project=project_ref,
+            description=f'Deleted comment on task "{task_title}"',
+            metadata={
+                "comment_id": comment_id_value,
+                "task_id": task.pk,
+                "task_title": task_title,
+                "project_id": project_ref.pk if project_ref else None,
+                "project_name": project_ref.project_name if project_ref else "",
+                "content_preview": content_preview,
+            },
+        )
+
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["get"], url_path="logs")
     def task_logs(self, request, pk=None):

@@ -3,6 +3,8 @@ from django.contrib.auth.models import User
 from accounts.models import RegisterModel
 from .group_assignment import set_user_role
 from .enums import RoleEnum
+from .audit_service import AuditService
+
 
 def register_user(username, first_name, last_name, email, password):
     # check if email exists
@@ -10,15 +12,29 @@ def register_user(username, first_name, last_name, email, password):
         raise ValueError("A user with this email already exists")
 
     user = User.objects.create_user(
-        username = username,
-        email = email,
-        password = password,
-        first_name = first_name,
-        last_name = last_name,
+        username=username,
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
     )
-    set_user_role(user, RoleEnum.GUEST) # Assign default permissions to a new user
+    set_user_role(user, RoleEnum.GUEST)  # Assign default permissions to a new user
 
+    register_model = RegisterModel.objects.create(user=user)
 
-    register_model = RegisterModel.objects.create(user = user)
+    AuditService.registered(
+        actor=user,
+        target=user,
+        description=f'User "{user.username}" registered',
+        metadata={
+            "user_id": user.pk,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "default_role": RoleEnum.GUEST,
+            "register_model_id": register_model.pk,
+        },
+    )
 
     return register_model

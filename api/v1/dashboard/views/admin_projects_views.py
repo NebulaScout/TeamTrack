@@ -7,7 +7,6 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from api.v1.common.responses import ResponseMixin
-from core.services.enums import StatusEnum
 from core.services.project_service import ProjectService
 from projects.models import ProjectsModel
 from ..serializers.admin_serializers import (
@@ -15,6 +14,8 @@ from ..serializers.admin_serializers import (
     AdminProjectMemberSerializer,
     AdminProjectWriteSerializer,
 )
+from core.services.audit_service import AuditService
+from core.services.enums import StatusEnum, AuditModule
 
 
 class AdminProjectMembersView(ResponseMixin, APIView):
@@ -188,6 +189,15 @@ class AdminProjectDetailView(ResponseMixin, APIView):
                 status_code=status.HTTP_404_NOT_FOUND,
             )
 
+        before = {
+            "project_name": project.project_name,
+            "description": project.description,
+            "status": str(project.status) if project.status else "",
+            "priority": str(project.priority) if project.priority else "",
+            "start_date": str(project.start_date) if project.start_date else "",
+            "end_date": str(project.end_date) if project.end_date else "",
+        }
+
         serializer = AdminProjectWriteSerializer(
             project, data=request.data, partial=True
         )
@@ -201,6 +211,39 @@ class AdminProjectDetailView(ResponseMixin, APIView):
         serializer.save()
 
         updated = self._get_project(pk)
+        if not updated:
+            return self._error(
+                "NOT_FOUND",
+                "Project not found after update",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        after = {
+            "project_name": updated.project_name,
+            "description": updated.description,
+            "status": str(updated.status) if updated.status else "",
+            "priority": str(updated.priority) if updated.priority else "",
+            "start_date": str(updated.start_date) if updated.start_date else "",
+            "end_date": str(updated.end_date) if updated.end_date else "",
+        }
+
+        changed_fields = {}
+
+        for field, old_value in before.items():
+            new_value = after[field]
+            if old_value != new_value:
+                changed_fields[field] = {"old": old_value, "new": new_value}
+
+        if changed_fields:
+            AuditService.updated(
+                module=AuditModule.PROJECT,
+                actor=request.user,
+                target=updated,
+                project=updated,
+                description=f'Updated project "{updated.project_name}"',
+                metadata={"changes": changed_fields},
+            )
+
         out = AdminProjectListSerializer(updated, context={"request": request})
         return self._success(data=out.data, message="Project updated successfully")
 
@@ -213,6 +256,20 @@ class AdminProjectDetailView(ResponseMixin, APIView):
                 "Project not found",
                 status_code=status.HTTP_404_NOT_FOUND,
             )
+
+        project_id = project.pk
+        project_name = project.project_name
+
+        AuditService.deleted(
+            module=AuditModule.PROJECT,
+            actor=request.user,
+            target_type=ProjectsModel.__name__,
+            target_id=project_id,
+            target_label=project_name,
+            project=project,
+            description=f'Deleted project "{project_name}"',
+            metadata={"project_name": project_name},
+        )
         project.delete()
         return self._success(
             message="Project deleted successfully",

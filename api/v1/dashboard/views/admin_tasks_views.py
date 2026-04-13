@@ -10,7 +10,9 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import User
 
 from api.v1.common.responses import ResponseMixin
-from core.services.enums import StatusEnum
+from core.services.enums import StatusEnum, AuditModule
+from core.services.task_service import TaskService
+from core.services.audit_service import AuditService
 from projects.models import ProjectsModel
 from tasks.models import TaskHistoryModel, TaskModel
 from accounts.models import RegisterModel
@@ -21,6 +23,7 @@ from ..serializers.admin_serializers import (
     AdminQuickActionsSerializer,
     AdminTaskDetailSerializer,
 )
+from audit.models import GlobalAuditLog
 
 
 class AdminQuickActionsView(ResponseMixin, APIView):
@@ -85,44 +88,31 @@ class AdminQuickActionsView(ResponseMixin, APIView):
 
         activities = []
 
-        registrations = (
-            RegisterModel.objects.filter(created_at__gte=week_ago)
-            .select_related("user")
-            .order_by("-created_at")[:20]
+        audit_entries = (
+            GlobalAuditLog.objects.filter(occurred_at__gte=week_ago)
+            .select_related("actor", "actor__profile")
+            .order_by("-occurred_at")[:20]
         )
-        for reg in registrations:
-            full_name = reg.user.get_full_name() or reg.user.username
-            activities.append(
-                {
-                    "id": reg.pk,
-                    "action_type": "user_registered",
-                    "description": "New user registered",
-                    "actor_name": full_name,
-                    "actor_url": None,
-                    "timestamp": reg.created_at,
-                }
-            )
 
-        completions = (
-            TaskHistoryModel.objects.filter(
-                field_changed="status",
-                new_value=StatusEnum.DONE,
-                timestamp__gte=week_ago,
-            )
-            .select_related("changed_by", "task")
-            .order_by("-timestamp")[:20]
-        )
-        for history in completions:
-            actor = history.changed_by
-            full_name = actor.get_full_name() if actor else "Unknown"
+        for entry in audit_entries:
+            actor = entry.actor
+            actor_name = "System"
+            if actor:
+                actor_name = actor.get_full_name() or actor.username
+
             activities.append(
                 {
-                    "id": history.pk,
-                    "action_type": "task_completed",
-                    "description": f"completed task \"{history.task.title if history.task else ''}\"",
-                    "actor_name": full_name or (actor.username if actor else "Unknown"),
+                    "id": entry.pk,
+                    "action_type": AuditService.resolve_action_type(
+                        module=entry.module,
+                        action=entry.action,
+                        metadata=entry.metadata,
+                    ),
+                    "description": entry.description
+                    or f"{entry.action} {entry.module}",
+                    "actor_name": actor_name,
                     "actor_url": None,
-                    "timestamp": history.timestamp,
+                    "timestamp": entry.occurred_at,
                 }
             )
 
@@ -325,6 +315,10 @@ class AdminTaskDetailView(ResponseMixin, APIView):
                 "You do not have access to this task.",
                 status_code=status.HTTP_403_FORBIDDEN,
             )
+        if task is None:
+            return self._error(
+                "NOT_FOUND", "Task not found.", status_code=status.HTTP_404_NOT_FOUND
+            )
 
         serializer = AdminTaskUpdateSerializer(data=request.data, partial=True)
         if not serializer.is_valid():
@@ -336,38 +330,44 @@ class AdminTaskDetailView(ResponseMixin, APIView):
             )
 
         data = serializer.validated_data or {}
+        update_payload = {}
 
-        if task:
-            if isinstance(data, dict) and "status" in data:
-                task.status = data["status"]
-            if isinstance(data, dict) and "priority" in data:
-                task.priority = data["priority"]
-            if isinstance(data, dict) and "assigned_to" in data:
-                if data["assigned_to"] is None:
-                    task.assigned_to = None
-                else:
-                    try:
-                        new_assignee = User.objects.get(pk=data["assigned_to"])
-                    except User.DoesNotExist:
-                        return self._error(
-                            "NOT_FOUND",
-                            "Assigned user not found.",
-                            status_code=status.HTTP_404_NOT_FOUND,
-                        )
-                    task.assigned_to = new_assignee
+        if isinstance(data, dict) and "status" in data:
+            update_payload["status"] = data["status"]
 
-            task.save()
+        if isinstance(data, dict) and "priority" in data:
+            update_payload["priority"] = data["priority"]
 
-            updated_task = TaskModel.objects.select_related(
-                "project", "assigned_to", "assigned_to__profile"
-            ).get(pk=task.pk)
+        if isinstance(data, dict) and "assigned_to" in data:
+            assigned_id = data["assigned_to"]
+            if assigned_id is None:
+                update_payload["assigned_to"] = None
+            else:
+                try:
+                    update_payload["assigned_to"] = User.objects.get(pk=assigned_id)
+                except User.DoesNotExist:
+                    return self._error(
+                        "NOT_FOUND",
+                        "Assigned user not found.",
+                        status_code=status.HTTP_404_NOT_FOUND,
+                    )
 
-            return self._success(
-                data=AdminTaskListSerializer(
-                    updated_task, context={"request": request}
-                ).data,
-                message="Task updated successfully.",
-            )
+        updated_task = TaskService.update_task(
+            user=request.user,
+            task_id=task.pk,
+            data=update_payload,
+        )
+
+        updated_task = TaskModel.objects.select_related(
+            "project", "assigned_to", "assigned_to__profile"
+        ).get(pk=updated_task.pk)
+
+        return self._success(
+            data=AdminTaskListSerializer(
+                updated_task, context={"request": request}
+            ).data,
+            message="Task updated successfully.",
+        )
 
     def delete(self, request, pk):
         user = request.user
@@ -385,5 +385,22 @@ class AdminTaskDetailView(ResponseMixin, APIView):
             )
 
         if task:
+
+            AuditService.deleted(
+                module=AuditModule.TASK,
+                actor=user,
+                target_type=TaskModel.__name__,
+                target_id=task.pk,
+                target_label=task.title,
+                project=task.project,
+                description=f'Deleted task "{task.title}"',
+                metadata={
+                    "task_title": task.title,
+                    "project_id": task.project.pk if task.project else None,
+                    "project_name": task.project.project_name if task.project else "",
+                },
+            )
+
             task.delete()
+
         return self._success(message="Task deleted successfully.")

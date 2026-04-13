@@ -9,7 +9,9 @@ from django.contrib.auth.models import User
 
 from api.v1.common.responses import ResponseMixin
 from projects.models import ProjectsModel
-from tasks.models import TaskHistoryModel
+
+# from tasks.models import TaskHistoryModel
+from audit.models import GlobalAuditLog
 from ..serializers.admin_serializers import AuditLogsResponseSerializer
 
 
@@ -34,43 +36,6 @@ class AdminAuditLogsView(ResponseMixin, APIView):
     def _is_authorised(self, user):
         return user.is_staff or user.groups.filter(name="Project Manager").exists()
 
-    def _get_action_type(self, field_changed):
-        mapping = {
-            "status": "changed status",
-            "priority": "changed priority",
-            "assigned_to": "assigned",
-            "due_date": "changed due date",
-            "title": "changed title",
-            "description": "changed description",
-        }
-        return mapping.get(field_changed, "updated")
-
-    def _format_description(self, history):
-        field = history.field_changed
-        task_title = history.task.title if history.task else "Unknown task"
-
-        if field == "status":
-            return f'changed status "{task_title}"'
-        elif field == "priority":
-            return f'changed priority "{task_title}"'
-        elif field == "assigned_to":
-            if history.new_value:
-                try:
-                    assignee = User.objects.get(username=history.new_value)
-                    assignee_name = assignee.get_full_name() or assignee.username
-                    return f'assigned "{task_title}" to {assignee_name}'
-                except User.DoesNotExist:
-                    return f'assigned "{task_title}"'
-            return f'unassigned "{task_title}"'
-        elif field == "due_date":
-            return f'changed due date "{task_title}"'
-        elif field == "title":
-            return f'changed title from "{history.old_value}" to "{history.new_value}"'
-        elif field == "description":
-            return f'changed description "{task_title}"'
-        else:
-            return f'updated "{task_title}"'
-
     @extend_schema(responses=AuditLogsResponseSerializer)
     def get(self, request):
         user = request.user
@@ -82,12 +47,11 @@ class AdminAuditLogsView(ResponseMixin, APIView):
                 status_code=status.HTTP_403_FORBIDDEN,
             )
 
-        base_qs = TaskHistoryModel.objects.select_related(
-            "changed_by",
-            "changed_by__profile",
-            "task",
-            "task__project",
-        ).order_by("-timestamp")
+        base_qs = GlobalAuditLog.objects.select_related(
+            "actor",
+            "actor__profile",
+            "project",
+        ).order_by("-occurred_at")
 
         if not user.is_staff:
             project_ids = list(
@@ -97,20 +61,21 @@ class AdminAuditLogsView(ResponseMixin, APIView):
                 .distinct()
                 .values_list("id", flat=True)
             )
-            base_qs = base_qs.filter(task__project_id__in=project_ids)
+            base_qs = base_qs.filter(project_id__in=project_ids)
 
         search = request.query_params.get("search", "").strip()
         if search:
             base_qs = base_qs.filter(
-                Q(task__title__icontains=search)
-                | Q(task__project__project_name__icontains=search)
+                Q(description__icontains=search)
+                | Q(target_label__icontains=search)
+                | Q(project__project_name__icontains=search)
             )
 
         project_filter = request.query_params.get("project", "").strip()
         if project_filter:
             try:
                 project_id = int(project_filter)
-                base_qs = base_qs.filter(task__project_id=project_id)
+                base_qs = base_qs.filter(project_id=project_id)
             except ValueError:
                 pass
 
@@ -118,13 +83,17 @@ class AdminAuditLogsView(ResponseMixin, APIView):
         if user_filter:
             try:
                 user_id = int(user_filter)
-                base_qs = base_qs.filter(changed_by_id=user_id)
+                base_qs = base_qs.filter(actor_id=user_id)
             except ValueError:
                 pass
 
-        change_type_filter = request.query_params.get("change_type", "").strip()
-        if change_type_filter:
-            base_qs = base_qs.filter(field_changed=change_type_filter)
+        module_filter = request.query_params.get("module", "").strip().lower()
+        if module_filter:
+            base_qs = base_qs.filter(module=module_filter)
+
+        action_filter = request.query_params.get("action", "").strip().lower()
+        if action_filter:
+            base_qs = base_qs.filter(action=action_filter)
 
         limit = request.query_params.get("limit", "50").strip()
         try:
@@ -133,33 +102,28 @@ class AdminAuditLogsView(ResponseMixin, APIView):
             limit = 50
 
         total_count = base_qs.count()
-        history_entries = base_qs[:limit]
+        entries = base_qs[:limit]
 
         logs = []
-        for history in history_entries:
-            if not history.task:
-                continue
-
+        for entry in entries:
             logs.append(
                 {
-                    "id": history.pk,
-                    "actor": history.changed_by,
-                    "action_type": self._get_action_type(history.field_changed),
-                    "description": self._format_description(history),
-                    "task_id": history.task.pk,
-                    "task_title": history.task.title,
-                    "project_id": (
-                        history.task.project.pk if history.task.project else None
-                    ),
+                    "id": entry.pk,
+                    "actor": entry.actor,
+                    "module": entry.module,
+                    "action": entry.action,
+                    "action_type": f"{entry.module}_{entry.action}",
+                    "description": entry.description
+                    or f"{entry.action} {entry.module}",
+                    "target_type": entry.target_type,
+                    "target_id": entry.target_id,
+                    "target_label": entry.target_label,
+                    "project_id": entry.project.id if entry.project else None,
                     "project_name": (
-                        history.task.project.project_name
-                        if history.task.project
-                        else "Unknown"
+                        entry.project.project_name if entry.project else None
                     ),
-                    "field_changed": history.field_changed,
-                    "old_value": history.old_value,
-                    "new_value": history.new_value,
-                    "timestamp": history.timestamp,
+                    "metadata": entry.metadata or {},
+                    "timestamp": entry.occurred_at,
                 }
             )
 
