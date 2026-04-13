@@ -53,8 +53,8 @@ class RecurrenceEnums(models.TextChoices):
     """Calendar recurrence"""
 
     DAILY = "DAILY", "Daily"
-    WEEKLY = "WEEKLY" "Weekly"
-    MONTHLY = "MONTHLY" "Monthly"
+    WEEKLY = "WEEKLY", "Weekly"
+    MONTHLY = "MONTHLY", "Monthly"
 
 
 class AuditModule(models.TextChoices):
