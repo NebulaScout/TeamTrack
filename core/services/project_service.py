@@ -16,7 +16,7 @@ class ProjectService:
         ProjectMembers.objects.create(
             project=project,
             project_member=user,
-            role_in_project="Project Mteanager",  # creator of project is always a project manager
+            role_in_project="Project Manager",  # creator of project is always a project manager
         )
 
         AuditService.created(

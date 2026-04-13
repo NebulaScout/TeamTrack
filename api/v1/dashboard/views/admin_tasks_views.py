@@ -103,7 +103,11 @@ class AdminQuickActionsView(ResponseMixin, APIView):
             activities.append(
                 {
                     "id": entry.pk,
-                    "action_type": f"{entry.module}_{entry.action}",
+                    "action_type": AuditService.resolve_action_type(
+                        module=entry.module,
+                        action=entry.action,
+                        metadata=entry.metadata,
+                    ),
                     "description": entry.description
                     or f"{entry.action} {entry.module}",
                     "actor_name": actor_name,

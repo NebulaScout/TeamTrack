@@ -77,7 +77,8 @@ class TaskService:
         Generic audited update for all tracked task fields.
         Expects validated serializer data.
         """
-        task = TaskModel.objects.get(id=task_id)
+        task = TaskModel.objects.select_related("project").get(id=task_id)
+        changed_fields = {}
 
         for field, new_val in data.items():
             if field not in TaskService.TRACKED_FIELDS:
@@ -96,15 +97,45 @@ class TaskService:
                     old_value=old_serialized,
                     new_value=new_serialized,
                 )
+                changed_fields[field] = {
+                    "old": old_serialized,
+                    "new": new_serialized,
+                }
 
             setattr(task, field, new_val)
 
         task.save()
+
+        if changed_fields:
+            status_change = changed_fields.get("status", {})
+            is_completion = str(status_change.get("new", "")).upper() == "DONE"
+
+            AuditService.updated(
+                module=AuditModule.TASK,
+                actor=user,
+                target=task,
+                project=task.project,
+                description=(
+                    f'Completed task "{task.title}"'
+                    if is_completion
+                    else f'Updated task "{task.title}"'
+                ),
+                metadata={
+                    "task_id": task.pk,
+                    "task_title": task.title,
+                    "project_id": task.project.pk,
+                    "project_name": task.project.project_name if task.project else "",
+                    "changes": changed_fields,
+                },
+            )
+
         return task
 
     @staticmethod
     def assign_task(*, altered_by, task_id, assigned_to_id):
-        task = TaskModel.objects.get(id=task_id)
+        task = TaskModel.objects.select_related("project", "assigned_to").get(
+            id=task_id
+        )
 
         new_user = None
         if assigned_to_id is not None:
@@ -122,13 +153,34 @@ class TaskService:
                 new_value=new_serialized,
             )
 
+            AuditService.updated(
+                module=AuditModule.TASK,
+                actor=altered_by,
+                target=task,
+                project=task.project,
+                description=f'Updated task "{task.title}"',
+                metadata={
+                    "task_id": task.pk,
+                    "task_title": task.title,
+                    "project_id": task.project.pk if task.project else None,
+                    "project_name": task.project.project_name if task.project else "",
+                    "changes": {
+                        "assigned_to": {
+                            "old": old_serialized,
+                            "new": new_serialized,
+                        }
+                    },
+                    "assigned_to_id": new_user.pk if new_user else None,
+                },
+            )
+
         task.assigned_to = new_user
         task.save()
         return task
 
     @staticmethod
     def update_task_status(*, user, task_id, status):
-        task = TaskModel.objects.get(id=task_id)
+        task = TaskModel.objects.select_related("project").get(id=task_id)
         old_serialized = TaskService._serialize_value("status", task.status)
         new_serialized = TaskService._serialize_value("status", status)
 
@@ -139,6 +191,30 @@ class TaskService:
                 field_enum=TaskFieldEnum.STATUS,
                 old_value=old_serialized,
                 new_value=new_serialized,
+            )
+
+            AuditService.updated(
+                module=AuditModule.TASK,
+                actor=user,
+                target=task,
+                project=task.project,
+                description=(
+                    f'Completed task "{task.title}"'
+                    if str(new_serialized).upper() == "DONE"
+                    else f'Updated task "{task.title}"'
+                ),
+                metadata={
+                    "task_id": task.pk,
+                    "task_title": task.title,
+                    "project_id": task.project.pk,
+                    "project_name": task.project.project_name if task.project else "",
+                    "changes": {
+                        "status": {
+                            "old": old_serialized,
+                            "new": new_serialized,
+                        }
+                    },
+                },
             )
 
         task.status = status

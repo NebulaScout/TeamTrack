@@ -12,6 +12,44 @@ from core.services.enums import AuditAction, AuditModule
 
 class AuditService:
     @staticmethod
+    def _enum_value(value):
+        """
+        Return raw value for enums or the original string.
+        """
+        return getattr(value, "value", value)
+
+    @staticmethod
+    def resolve_action_type(*, module, action, metadata=None):
+        """
+        Canonical action_type used by dashboard endpoints.
+        Defaults to: <module>_<action>
+        Supports special-cases from metadata.
+        """
+        metadata = metadata or {}
+        module_val = str(AuditService._enum_value(module)).lower()
+        action_val = str(AuditService._enum_value(action)).lower()
+
+        # Optional explicit override if caller provides one
+        explicit = metadata.get("action_type")
+        if explicit:
+            return str(explicit)
+
+        # Friendly aliases
+        if module_val == "comment" and action_val == "created":
+            return "comment_added"
+
+        if module_val == "task" and action_val == "updated":
+            changes = metadata.get("changes", {})
+            status_change = changes.get("status", {})
+            new_status = str(status_change.get("new", "")).upper()
+            if new_status == "DONE":
+                return "task_completed"
+            return "task_updated"
+
+        # Default canonical format
+        return f"{module_val}_{action_val}"
+
+    @staticmethod
     def log(
         *,
         module: AuditModule | str,
@@ -78,6 +116,7 @@ class AuditService:
         project: Optional[Model] = None,
         description: str = "",
         metadata: Optional[dict[str, Any]] = None,
+        occurred_at: Optional[str] = None,
     ) -> GlobalAuditLog:
         return AuditService.log(
             module=module,
@@ -87,6 +126,7 @@ class AuditService:
             project=project,
             description=description,
             metadata=metadata,
+            occurred_at=occurred_at,
         )
 
     @staticmethod
@@ -98,6 +138,7 @@ class AuditService:
         project: Optional[Model] = None,
         description: str = "",
         metadata: Optional[dict[str, Any]] = None,
+        occurred_at: Optional[str] = None,
     ) -> GlobalAuditLog:
         return AuditService.log(
             module=module,
@@ -107,6 +148,7 @@ class AuditService:
             project=project,
             description=description,
             metadata=metadata,
+            occurred_at=occurred_at,
         )
 
     @staticmethod
@@ -120,6 +162,7 @@ class AuditService:
         project: Optional[Model] = None,
         description: str = "",
         metadata: Optional[dict[str, Any]] = None,
+        occurred_at: Optional[str] = None,
     ) -> GlobalAuditLog:
         return AuditService.log(
             module=module,
@@ -131,6 +174,7 @@ class AuditService:
             project=project,
             description=description,
             metadata=metadata,
+            occurred_at=occurred_at,
         )
 
     @staticmethod
@@ -140,6 +184,7 @@ class AuditService:
         target: Optional[Model] = None,
         description: str = "User registered",
         metadata: Optional[dict[str, Any]] = None,
+        occurred_at: Optional[str] = None,
     ) -> GlobalAuditLog:
         return AuditService.log(
             module=AuditModule.USER,
@@ -148,4 +193,5 @@ class AuditService:
             target=target,
             description=description,
             metadata=metadata,
+            occurred_at=occurred_at,
         )
