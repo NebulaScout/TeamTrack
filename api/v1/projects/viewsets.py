@@ -20,6 +20,7 @@ from .serializers import (
     ProjectMemberDetailSerializer,
     TeamStatsSerializer,
     UpdateMemberRoleSerializer,
+    AddTeamMemberSerializer,
 )
 from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
@@ -195,7 +196,7 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
         description="Invite a team member to the project. Only Admins and Project Managers can invite members.",
     )
     @action(detail=True, methods=["post"], url_path="team/invite")
-    def invite_team_member(self, request, pk=None):
+    def invite_team_member(self, request, pk=None):  # TODO: Rename this method
         """
         Invite a user to join the project team.
         Required permissions: Admin or Project Manager
@@ -284,28 +285,18 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["get"], url_path="team/members")
     def list_team_members(self, request, pk=None):
-        """
-        List all team members for this project.
-
-        Available filters:
-        - role: Filter by role
-        - search: Search by name, username, or email
-        """
         project = self.get_object()
 
-        # Get all members for this project
         members = (
             ProjectMembers.objects.filter(project=project)
             .select_related("project_member", "project_member__profile")
             .prefetch_related("project_member__assigned_tasks")
         )
 
-        # Apply role filter
         role_filter = request.query_params.get("role")
         if role_filter:
             members = members.filter(role_in_project=role_filter)
 
-        # Apply search filter
         search_query = request.query_params.get("search")
         if search_query:
             members = members.filter(
@@ -318,9 +309,60 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
         serializer = ProjectMemberDetailSerializer(
             members, many=True, context={"request": request}
         )
-
         return self._success(
             data=serializer.data, message="Team members retrieved successfully"
+        )
+
+    @extend_schema(
+        request=AddTeamMemberSerializer,
+        responses={
+            201: ProjectMemberDetailSerializer,
+            400: OpenApiResponse(
+                description="Bad Request - Invalid input or already a member"
+            ),
+            403: OpenApiResponse(description="Forbidden - Insufficient permissions"),
+            404: OpenApiResponse(description="User not found"),
+        },
+        description="Add a team member to the project using user_id and role",
+    )
+    @list_team_members.mapping.post  # type: ignore
+    def add_team_member(self, request, pk=None):
+        project = self.get_object()
+
+        input_serializer = AddTeamMemberSerializer(data=request.data)
+        if not input_serializer.is_valid():
+            return self._error(
+                "INVALID_INPUT",
+                "Invalid input data",
+                details=input_serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_to_add = User.objects.get(id=input_serializer.validated_data["user_id"])
+
+        if ProjectMembers.objects.filter(
+            project=project, project_member=user_to_add
+        ).exists():
+            return self._error(
+                "ALREADY_MEMBER",
+                f"{user_to_add.username} is already a member of this project",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        membership = ProjectMembers.objects.create(
+            project=project,
+            project_member=user_to_add,
+            role_in_project=input_serializer.validated_data["role"],
+        )
+
+        output_serializer = ProjectMemberDetailSerializer(
+            membership, context={"request": request}
+        )
+
+        return self._success(
+            data=output_serializer.data,
+            message=f"{user_to_add.username} has been added to the project team",
+            status_code=status.HTTP_201_CREATED,
         )
 
     @extend_schema(
@@ -428,6 +470,64 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
         )
 
     @extend_schema(
+        request=UpdateMemberRoleSerializer,
+        responses={
+            200: ProjectMemberDetailSerializer,
+            400: OpenApiResponse(description="Bad Request"),
+            403: OpenApiResponse(description="Forbidden - Insufficient permissions"),
+            404: OpenApiResponse(description="Member not found"),
+        },
+        description="Update a team member role using uppercase role payload",
+    )
+    @action(
+        detail=True,
+        methods=["patch"],
+        url_path="team/members/(?P<member_id>[^/.]+)",
+    )
+    def update_team_member(self, request, pk=None, member_id=None):
+        project = self.get_object()
+
+        try:
+            membership = ProjectMembers.objects.select_related(
+                "project_member", "project_member__profile"
+            ).get(project=project, project_member_id=member_id)
+        except ProjectMembers.DoesNotExist:
+            return self._error(
+                "MEMBER_NOT_FOUND",
+                "Team member not found in this project",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+
+        if membership.project_member == request.user:
+            return self._error(
+                "INVALID_OPERATION",
+                "You cannot change your own role",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = UpdateMemberRoleSerializer(data=request.data)
+        if not serializer.is_valid():
+            return self._error(
+                "INVALID_INPUT",
+                "Invalid role specified",
+                details=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        old_role = membership.role_in_project
+        membership.role_in_project = serializer.validated_data["role"]
+        membership.save()
+
+        output_serializer = ProjectMemberDetailSerializer(
+            membership, context={"request": request}
+        )
+
+        return self._success(
+            data=output_serializer.data,
+            message=f"Role updated from {old_role} to {membership.role_in_project}",
+        )
+
+    @extend_schema(
         responses={
             204: OpenApiResponse(description="Member removed successfully"),
             403: OpenApiResponse(description="Forbidden - Insufficient permissions"),
@@ -435,9 +535,7 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
         },
         description="Remove a team member from the project. Only Admins and Project Managers can remove members.",
     )
-    @action(
-        detail=True, methods=["delete"], url_path="team/members/(?P<member_id>[^/.]+)"
-    )
+    @update_team_member.mapping.delete  # type: ignore
     def remove_team_member(self, request, pk=None, member_id=None):
         """
         Remove a team member from the project.
@@ -470,7 +568,7 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
         if membership.project_member == request.user:
             return self._error(
                 "INVALID_OPERATION",
-                "Use the leave endpoint to remove yourself from the project",
+                "Use the leave option to remove yourself from the project",
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
 

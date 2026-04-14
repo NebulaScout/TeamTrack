@@ -9,6 +9,14 @@ from ..tasks.serializers import TaskSerializer
 from core.services.enums import RoleEnum
 
 
+ROLE_MAP = {
+    "ADMIN": "Admin",
+    "PROJECT_MANAGER": "Project Manager",
+    "DEVELOPER": "Developer",
+    "GUEST": "Guest",
+}
+
+
 class ProjectMemberSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source="project_member.id", read_only=True)
     username = serializers.CharField(source="project_member.username", read_only=True)
@@ -154,7 +162,6 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
     role = serializers.CharField(source="role_in_project", read_only=True)
     is_online = serializers.SerializerMethodField()
     task_count = serializers.SerializerMethodField()
-    # department = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectMembers
@@ -168,7 +175,6 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
             "role",
             "is_online",
             "task_count",
-            # "department",
         ]
 
     def get_avatar(self, obj):
@@ -197,18 +203,6 @@ class ProjectMemberDetailSerializer(serializers.ModelSerializer):
         """Get task count for this user in this project"""
         return obj.project_member.assigned_tasks.filter(project=obj.project).count()
 
-    # def get_department(self, obj):
-    #     """Get department from user groups or profile"""
-    #     # You can customize this based on your needs
-    #     groups = obj.project_member.groups.values_list('name', flat=True)
-    #     return ', '.join(groups) if groups else obj.role_in_project
-
-
-class UpdateMemberRoleSerializer(serializers.Serializer):
-    """Serializer for updating a member's role in a project"""
-
-    role = serializers.ChoiceField(choices=RoleEnum)
-
 
 class TeamStatsSerializer(serializers.Serializer):
     """Statistics for a project team"""
@@ -219,3 +213,37 @@ class TeamStatsSerializer(serializers.Serializer):
     project_managers = serializers.IntegerField()
     developers = serializers.IntegerField()
     guests = serializers.IntegerField()
+
+
+class AddTeamMemberSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(min_value=1)
+    role = serializers.CharField()
+
+    def validate_user_id(self, value):
+        if not User.objects.filter(id=value).exists():
+            raise ValidationError("No user found with this user_id")
+        return value
+
+    def validate_role(self, value):
+        normalized = value.strip().upper().replace(" ", "_")
+        mapped_role = ROLE_MAP.get(normalized)
+
+        if not mapped_role:
+            raise ValidationError(
+                "Invalid role. Allowed values: ADMIN, PROJECT_MANAGER, DEVELOPER, GUEST"
+            )
+
+        return mapped_role
+
+
+class UpdateMemberRoleSerializer(serializers.Serializer):
+    role = serializers.CharField()
+
+    def validate_role(self, value):
+        normalized = value.strip().upper().replace(" ", "_")
+        mapped_role = ROLE_MAP.get(normalized)
+        if not mapped_role:
+            raise ValidationError(
+                "Invalid role. Allowed values: ADMIN, PROJECT_MANAGER, DEVELOPER, GUEST"
+            )
+        return mapped_role

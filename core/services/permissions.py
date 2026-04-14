@@ -87,6 +87,8 @@ class ProjectPermissions(permissions.BasePermission):
             "tasks": "add_taskmodel",
             "invite_team_member": "add_projectmembers",
             "list_team_members": "add_projectmembers",
+            "add_team_member": "add_projectmembers",
+            "update_team_member": "change_projectmembers",
             "team_stats": "add_projectmembers",
             "update_member_role": "change_projectmembers",
             "remove_team_member": "delete_projectmembers",
@@ -119,6 +121,8 @@ class ProjectPermissions(permissions.BasePermission):
         # For team management actions, check if user has appropriate role in THIS project
         if view.action in [
             "invite_team_member",
+            "add_team_member",
+            "update_team_member",
             "remove_team_member",
             "update_member_role",
         ]:
