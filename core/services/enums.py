@@ -47,6 +47,7 @@ class ProjectStatusEnum(models.TextChoices):
     ACTIVE = "ACTIVE", "active"
     COMPLETED = "COMPLETED", "completed"
     ON_HOLD = "ON_HOLD", "on_hold"
+    # IN_PROGRESS = "IN_PROGRESS", "in_progress"
 
 
 class RecurrenceEnums(models.TextChoices):

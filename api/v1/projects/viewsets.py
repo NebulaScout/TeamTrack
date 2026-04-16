@@ -106,6 +106,62 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
             status_code=status.HTTP_201_CREATED,
         )
 
+    def update(self, request, *args, **kwargs):
+        project = self.get_object()
+        serializer = self.get_serializer(project, data=request.data)
+
+        if not serializer.is_valid():
+            return self._error(
+                "INVALID_INPUT",
+                "Error updating project. Please confirm all fields have valid data.",
+                details=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        updated_project = ProjectService.update_project(
+            user=request.user,
+            project_id=project.id,
+            data=serializer.validated_data,
+        )
+
+        output_serializer = ProjectsDetailSerializer(
+            updated_project, context={"request": request}
+        )
+
+        return self._success(
+            data=output_serializer.data,
+            message="Project updated successfully",
+            status_code=status.HTTP_200_OK,
+        )
+
+    def partial_update(self, request, *args, **kwargs):
+        project = self.get_object()
+        serializer = self.get_serializer(project, data=request.data, partial=True)
+
+        if not serializer.is_valid():
+            return self._error(
+                "INVALID_INPUT",
+                "Error updating project. Please confirm all fields have valid data.",
+                details=serializer.errors,
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
+
+        updated_project = ProjectService.update_project(
+            user=request.user,
+            project_id=project.id,
+            data=serializer.validated_data,
+        )
+
+        output_serializer = ProjectsDetailSerializer(
+            updated_project, context={"request": request}
+        )
+
+        return self._success(
+            data=output_serializer.data,
+            message="Project updated successfully",
+            status_code=status.HTTP_200_OK,
+        )
+
     @extend_schema(
         request=TaskSerializer,
         responses={200: TaskSerializer(many=True), 201: TaskSerializer()},

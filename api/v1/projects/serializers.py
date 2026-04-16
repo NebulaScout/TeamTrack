@@ -42,6 +42,24 @@ class ProjectWriteSerializer(serializers.ModelSerializer):
             "end_date",
         ]
 
+    def validate(self, attrs):
+        # Support both PUT and PATCH by falling back to instance values when needed.
+        start_date = attrs.get(
+            "start_date",
+            getattr(self.instance, "start_date", None) if self.instance else None,
+        )
+        end_date = attrs.get(
+            "end_date",
+            getattr(self.instance, "end_date", None) if self.instance else None,
+        )
+
+        if start_date and end_date and start_date > end_date:
+            raise ValidationError(
+                {"end_date": "end_date must be greater than or equal to start_date"}
+            )
+
+        return attrs
+
 
 class ProjectListSerializer(serializers.ModelSerializer):
     created_by = serializers.PrimaryKeyRelatedField(read_only=True)  # get only user id
