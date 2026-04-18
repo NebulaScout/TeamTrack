@@ -62,8 +62,10 @@ class ProjectWriteSerializer(serializers.ModelSerializer):
 
 
 class ProjectListSerializer(serializers.ModelSerializer):
-    created_by = serializers.PrimaryKeyRelatedField(read_only=True)  # get only user id
+    created_by = serializers.PrimaryKeyRelatedField(read_only=True)
     members = ProjectMemberSerializer(many=True, read_only=True)
+    status = serializers.SerializerMethodField()
+    priority = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectsModel
@@ -74,18 +76,43 @@ class ProjectListSerializer(serializers.ModelSerializer):
             "start_date",
             "end_date",
             "status",
+            "priority",
             "members",
             "created_by",
         ]
+
+    def _enum_to_value(self, value):
+        if value is None:
+            return None
+        return value.value if hasattr(value, "value") else str(value)
+
+    def get_status(self, obj):
+        return self._enum_to_value(obj.status)
+
+    def get_priority(self, obj):
+        return self._enum_to_value(obj.priority)
 
 
 class ProjectsDetailSerializer(serializers.ModelSerializer):
     created_by = UserSerializer(read_only=True)
     members = ProjectMemberSerializer(many=True, read_only=True)
+    status = serializers.SerializerMethodField()
+    priority = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectsModel
         fields = "__all__"
+
+    def _enum_to_value(self, value):
+        if value is None:
+            return None
+        return value.value if hasattr(value, "value") else str(value)
+
+    def get_status(self, obj):
+        return self._enum_to_value(obj.status)
+
+    def get_priority(self, obj):
+        return self._enum_to_value(obj.priority)
 
 
 class ExtendedProjectsSerializer(ProjectsDetailSerializer):

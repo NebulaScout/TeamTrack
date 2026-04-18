@@ -209,9 +209,14 @@ class AdminProjectDetailView(ResponseMixin, APIView):
                 details=serializer.errors,
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
-        serializer.save()
 
-        updated = self._get_project(pk)
+        updated_project = ProjectService.update_project(
+            user=request.user,
+            project_id=project.pk,
+            data=serializer.validated_data,
+        )
+
+        updated = self._get_project(updated_project.pk)
         if not updated:
             return self._error(
                 "NOT_FOUND",
