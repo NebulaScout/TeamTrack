@@ -16,6 +16,7 @@ from ..serializers.admin_serializers import (
 )
 from core.services.audit_service import AuditService
 from core.services.enums import StatusEnum, AuditModule
+from core.services.permissions import IsAdminDashboardUser
 
 
 class AdminProjectMembersView(ResponseMixin, APIView):
@@ -25,7 +26,7 @@ class AdminProjectMembersView(ResponseMixin, APIView):
     """
 
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminDashboardUser]
 
     @extend_schema(responses=AdminProjectMemberSerializer)
     def get(self, request, pk):
@@ -61,7 +62,7 @@ class AdminProjectsView(ResponseMixin, APIView):
     """
 
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminDashboardUser]
 
     def _base_queryset(self):
         return (
@@ -137,7 +138,7 @@ class AdminProjectDetailView(ResponseMixin, APIView):
     """
 
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminDashboardUser]
 
     def _get_project(self, pk):
         try:

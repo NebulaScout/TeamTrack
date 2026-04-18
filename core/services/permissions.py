@@ -4,6 +4,25 @@ from core.services.roles import ROLE_PERMISSIONS
 from projects.models import ProjectMembers
 
 
+class IsAdminDashboardUser(permissions.BasePermission):
+    """
+    Allows access to dashboard-admin endpoints for:
+    - superusers
+    - staff users
+    - users in Admin group
+    """
+
+    def has_permission(self, request, view):  # type: ignore
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Admin").exists()
+        )
+
+
 class UserPermissions(permissions.BasePermission):
     """Permission class for users based on predefined role permissions"""
 
@@ -73,8 +92,21 @@ class ProjectPermissions(permissions.BasePermission):
         if request.user.is_staff or request.user.is_superuser:
             return True
 
-        user_groups = request.user.groups.values_list("name", flat=True)
+        # These actions are project-scoped; object-level checks decide access.
+        team_actions = {
+            "invite_team_member",
+            "add_team_member",
+            "update_team_member",
+            "update_member_role",
+            "remove_team_member",
+            "list_team_members",
+            "team_stats",
+            "leave_project",
+        }
+        if view.action in team_actions:
+            return True
 
+        user_groups = request.user.groups.values_list("name", flat=True)
         permissions_map = {
             "create": "add_projectsmodel",
             "update": "change_projectsmodel",
@@ -83,16 +115,7 @@ class ProjectPermissions(permissions.BasePermission):
             "retrieve": "view_projectsmodel",
             "assign_project": "assign_projectsmodel",
             "destroy": "delete_projectsmodel",
-            "add_members": "add_projectmembers",
             "tasks": "add_taskmodel",
-            "invite_team_member": "add_projectmembers",
-            "list_team_members": "add_projectmembers",
-            "add_team_member": "add_projectmembers",
-            "update_team_member": "change_projectmembers",
-            "team_stats": "add_projectmembers",
-            "update_member_role": "change_projectmembers",
-            "remove_team_member": "delete_projectmembers",
-            "leave_project": "leave_project",
         }
 
         required_permission = permissions_map.get(view.action)

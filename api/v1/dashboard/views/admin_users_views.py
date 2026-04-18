@@ -14,6 +14,7 @@ from ..serializers.admin_serializers import (
 )
 from core.services.audit_service import AuditService
 from core.services.enums import AuditModule
+from core.services.permissions import IsAdminDashboardUser
 
 
 class AdminUsersView(ResponseMixin, APIView):
@@ -22,7 +23,7 @@ class AdminUsersView(ResponseMixin, APIView):
     """
 
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminDashboardUser]
 
     @extend_schema(responses=AdminUserSerializer(many=True))
     def get(self, request):
@@ -71,7 +72,7 @@ class AdminUserDetailView(ResponseMixin, APIView):
     """
 
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdminDashboardUser]
 
     def _get_user(self, pk):
         try:
@@ -128,6 +129,7 @@ class AdminUserDetailView(ResponseMixin, APIView):
             )
 
         data = serializer.validated_data
+        update_fields = []
 
         if isinstance(data, dict) and "role" in data:
             try:
@@ -138,12 +140,23 @@ class AdminUserDetailView(ResponseMixin, APIView):
                     f'Role "{data["role"]}" does not exist.',
                     status_code=status.HTTP_404_NOT_FOUND,
                 )
-            user.groups.clear()
-            user.groups.add(group)
+            # user.groups.clear()
+            # user.groups.add(group)
+            user.groups.set([group])
+
+            # Keep IsAdminUser-compatible admin checks in sync
+            should_be_staff = group.name == "Admin" or user.is_superuser
+            if user.is_staff != should_be_staff:
+                user.is_staff = should_be_staff
+                update_fields.append("is_staff")
 
         if isinstance(data, dict) and "is_active" in data:
-            user.is_active = data["is_active"]
-            user.save(update_fields=["is_active"])
+            if user.is_active != data["is_active"]:
+                user.is_active = data["is_active"]
+                update_fields.append("is_active")
+
+        if update_fields:
+            user.save(update_fields=update_fields)
 
         updated_user = self._get_user(pk)
         first_group = updated_user.groups.first() if updated_user else None
