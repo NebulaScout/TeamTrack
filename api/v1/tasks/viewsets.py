@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, permissions
+from rest_framework import viewsets, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.response import Response
 from django.db.models import Q
@@ -15,7 +15,6 @@ from .serializers import (
     TaskWriteSerializer,
 )
 from tasks.models import TaskModel, CommentModel, TaskHistoryModel
-from core.services.roles import ROLE_PERMISSIONS
 from core.services.permissions import TaskPermissions
 from core.services.task_service import TaskService, CommentService
 from core.services.audit_service import AuditService
@@ -50,32 +49,21 @@ class TaskViewSet(viewsets.ModelViewSet):
             return TaskDetailSerializer
         return TaskDetailSerializer
 
-    def _can_view_all_tasks(self, user):
-        # Treat Django staff/superuser as global admin
-        if user.is_staff or user.is_superuser:
-            return True
-
-        user_groups = user.groups.values_list("name", flat=True)
-        return any(
-            "view_taskmodel" in ROLE_PERMISSIONS.get(group, []) for group in user_groups
-        )
-
     def get_queryset(self):  # type: ignore
         user = self.request.user
 
-        if self._can_view_all_tasks(user):
-            queryset = TaskModel.objects.all().distinct()
-        else:
-            queryset = TaskModel.objects.filter(
-                Q(created_by=user) | Q(assigned_to=user)
-            ).distinct()
+        # Always scope task visibility in non-admin endpoints.
+        queryset = TaskModel.objects.filter(
+            Q(created_by=user)
+            | Q(assigned_to=user)
+            | Q(project__created_by=user)
+            | Q(project__members__project_member=user)
+        ).distinct()
 
         # Optimize based on action
         if self.action == "list":
-            # minimal fetching for list view
             return queryset.select_related("project")
         elif self.action == "retrieve":
-            # related data for detail view
             return queryset.select_related(
                 "created_by", "created_by__profile", "assigned_to__profile", "project"
             ).prefetch_related(
@@ -90,7 +78,6 @@ class TaskViewSet(viewsets.ModelViewSet):
                 "project",
             )
         elif self.action == "task_logs":
-            # Include history for logs
             return queryset.select_related("project").prefetch_related(
                 "history", "history__changed_by", "history__changed_by__profile"
             )

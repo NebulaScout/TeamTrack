@@ -1,17 +1,13 @@
 from rest_framework import viewsets, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import User
-from rest_framework.response import Response
 from rest_framework.decorators import action
-from django.db.models import Q, Count, Case, When, IntegerField
-from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 
 from projects.models import ProjectsModel, ProjectMembers
 from .serializers import (
-    ExtendedUserSerializer,
-    ProjectMemberSerializer,
     TaskSerializer,
     ProjectListSerializer,
     ProjectsDetailSerializer,
@@ -25,7 +21,6 @@ from .serializers import (
 from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
 from core.services.task_service import TaskService
-from core.services.permissions import ROLE_PERMISSIONS
 from api.v1.common.responses import ResponseMixin
 
 from tasks.models import TaskModel
@@ -47,34 +42,13 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):  # type: ignore
         user = self.request.user
-        user_groups = user.groups.values_list("name", flat=True)
-
-        # Check if user has permission to view all projects
-        can_view_all = any(
-            "view_projectsmodel" in ROLE_PERMISSIONS.get(group, [])
-            for group in user_groups
-        )
-
-        # If a user has view_projectsmodel permission, they can view all created projects
-        if can_view_all:
-            return (
-                ProjectsModel.objects.all()
-                .distinct()
-                .prefetch_related("members", "members__project_member__profile")
-                .select_related("created_by")
-            )
 
         return (
-            ProjectsModel.objects.filter(  # Return if:
-                Q(created_by=user)  # project was created by the user or
-                | Q(
-                    members__project_member=user
-                )  # user has been assigned to the project
+            ProjectsModel.objects.filter(
+                Q(created_by=user) | Q(members__project_member=user)
             )
-            .distinct()  # remove duplicates
-            .prefetch_related(
-                "members", "members__project_member"
-            )  # retrive related records for better performance
+            .distinct()
+            .prefetch_related("members", "members__project_member__profile")
             .select_related("created_by")
         )
 
