@@ -2,7 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import User
 from rest_framework.decorators import action
-from django.db.models import Q
+from django.db.models import Q, Count
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from drf_spectacular.types import OpenApiTypes
 
@@ -22,7 +22,7 @@ from core.services.permissions import ProjectPermissions
 from core.services.project_service import ProjectService
 from core.services.task_service import TaskService
 from api.v1.common.responses import ResponseMixin
-
+from core.services.enums import StatusEnum
 from tasks.models import TaskModel
 
 
@@ -48,8 +48,18 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
                 Q(created_by=user) | Q(members__project_member=user)
             )
             .distinct()
-            .prefetch_related("members", "members__project_member__profile")
+            .prefetch_related(
+                "members", "members__project_member__profile", "project_tasks"
+            )
             .select_related("created_by")
+            .annotate(
+                total_tasks=Count("project_tasks", distinct=True),
+                completed_tasks=Count(
+                    "project_tasks",
+                    filter=Q(project_tasks__status=StatusEnum.DONE),
+                    distinct=True,
+                ),
+            )
         )
 
     def list(self, request, *args, **kwargs):

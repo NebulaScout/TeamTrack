@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from projects.models import ProjectsModel, ProjectMembers
 from ..accounts.serializers import UserSerializer
 from ..tasks.serializers import TaskSerializer
-from core.services.enums import RoleEnum
+from core.services.enums import RoleEnum, StatusEnum
 
 
 ROLE_MAP = {
@@ -15,6 +15,34 @@ ROLE_MAP = {
     "DEVELOPER": "Developer",
     "GUEST": "Guest",
 }
+
+
+class ProjectProgressMixin:
+    # project_progress = serializers.SerializerMethodField()
+
+    def _compute_progress(self, obj):
+        total_tasks = getattr(obj, "total_tasks", None)
+        if total_tasks is None:
+            total_tasks = obj.project_tasks.count()
+
+        completed_tasks = getattr(obj, "completed_tasks", None)
+        if completed_tasks is None:
+            completed_tasks = obj.project_tasks.filter(status=StatusEnum.DONE).count()
+
+        progress_pct = (
+            round((completed_tasks / total_tasks) * 100, 1) if total_tasks else 0.0
+        )
+
+        return {
+            "id": obj.pk,
+            "project_name": obj.project_name,
+            "total_tasks": total_tasks,
+            "completed_tasks": completed_tasks,
+            "progress_pct": progress_pct,
+        }
+
+    def get_project_progress(self, obj):
+        return self._compute_progress(obj)
 
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
@@ -61,24 +89,39 @@ class ProjectWriteSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class ProjectListSerializer(serializers.ModelSerializer):
-    created_by = serializers.PrimaryKeyRelatedField(read_only=True)
-    members = ProjectMemberSerializer(many=True, read_only=True)
+class ProjectListSerializer(ProjectProgressMixin, serializers.ModelSerializer):
+    name = serializers.CharField(source="project_name", read_only=True)
+    startDate = serializers.DateField(source="start_date", read_only=True)
+    dueDate = serializers.DateField(source="end_date", read_only=True)
+    createdAt = serializers.DateField(source="created_at", read_only=True)
+    createdBy = serializers.IntegerField(source="created_by_id", read_only=True)
+    teamMembers = ProjectMemberSerializer(source="members", many=True, read_only=True)
+
+    # Computed/normalized fields
     status = serializers.SerializerMethodField()
     priority = serializers.SerializerMethodField()
+    totalTasks = serializers.SerializerMethodField()
+    tasksCompleted = serializers.SerializerMethodField()
+    progress = serializers.SerializerMethodField()
+    tasks = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectsModel
         fields = [
             "id",
-            "project_name",
+            "name",
             "description",
-            "start_date",
-            "end_date",
+            "startDate",
+            "dueDate",
             "status",
             "priority",
-            "members",
-            "created_by",
+            "progress",
+            "totalTasks",
+            "tasksCompleted",
+            "teamMembers",
+            "tasks",
+            "createdBy",
+            "createdAt",
         ]
 
     def _enum_to_value(self, value):
@@ -92,8 +135,40 @@ class ProjectListSerializer(serializers.ModelSerializer):
     def get_priority(self, obj):
         return self._enum_to_value(obj.priority)
 
+    def get_totalTasks(self, obj):
+        annotated = getattr(obj, "total_tasks", None)
+        return annotated if annotated is not None else obj.project_tasks.count()
 
-class ProjectsDetailSerializer(serializers.ModelSerializer):
+    def get_tasksCompleted(self, obj):
+        annotated = getattr(obj, "completed_tasks", None)
+        if annotated is not None:
+            return annotated
+        return obj.project_tasks.filter(status=StatusEnum.DONE).count()
+
+    def get_progress(self, obj):
+        total_tasks = self.get_totalTasks(obj)
+        completed_tasks = self.get_tasksCompleted(obj)
+        return round((completed_tasks / total_tasks) * 100) if total_tasks else 0
+
+    def get_tasks(self, obj):
+        # Return lightweight task objects; frontend still gets [] when none exist.
+        task_rows = obj.project_tasks.all().only(
+            "id", "title", "status", "priority", "due_date"
+        )
+        return [
+            {
+                "id": t.id,
+                "title": t.title,
+                "status": self._enum_to_value(t.status),
+                "priority": self._enum_to_value(t.priority),
+                "dueDate": t.due_date,
+            }
+            for t in task_rows
+        ]
+
+
+class ProjectsDetailSerializer(ProjectProgressMixin, serializers.ModelSerializer):
+    project_progress = serializers.SerializerMethodField()
     created_by = UserSerializer(read_only=True)
     members = ProjectMemberSerializer(many=True, read_only=True)
     status = serializers.SerializerMethodField()
@@ -132,6 +207,7 @@ class ExtendedProjectsSerializer(ProjectsDetailSerializer):
             "created_at",
             "members",
             "project_tasks",
+            "project_progress",
         ]
         read_only_fields = [
             "id",
