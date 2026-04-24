@@ -11,6 +11,7 @@ from .views.admin_tasks_views import (
     AdminQuickActionsView,
     AdminTasksView,
     AdminTaskDetailView,
+    AdminTaskCommentsView,
 )
 from .views.admin_audit_views import AdminAuditLogsView
 
@@ -36,6 +37,11 @@ urlpatterns = [
     path("admin/tasks/", AdminTasksView.as_view(), name="admin-tasks"),
     path(
         "admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"
+    ),
+    path(
+        "admin/tasks/<int:pk>/comments/",
+        AdminTaskCommentsView.as_view(),
+        name="admin-task-comments",
     ),
     path("admin/audit-logs/", AdminAuditLogsView.as_view(), name="admin-audit-logs"),
 ]

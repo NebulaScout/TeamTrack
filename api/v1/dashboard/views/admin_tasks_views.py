@@ -14,7 +14,7 @@ from core.services.enums import StatusEnum, AuditModule
 from core.services.task_service import TaskService
 from core.services.audit_service import AuditService
 from projects.models import ProjectsModel
-from tasks.models import TaskHistoryModel, TaskModel
+from tasks.models import TaskHistoryModel, TaskModel, CommentModel
 from accounts.models import RegisterModel
 from ..serializers.admin_serializers import (
     AdminTaskListSerializer,
@@ -22,6 +22,7 @@ from ..serializers.admin_serializers import (
     AdminTaskUpdateSerializer,
     AdminQuickActionsSerializer,
     AdminTaskDetailSerializer,
+    AdminTaskCommentSerializer,
 )
 from audit.models import GlobalAuditLog
 
@@ -385,7 +386,6 @@ class AdminTaskDetailView(ResponseMixin, APIView):
             )
 
         if task:
-
             AuditService.deleted(
                 module=AuditModule.TASK,
                 actor=user,
@@ -404,3 +404,73 @@ class AdminTaskDetailView(ResponseMixin, APIView):
             task.delete()
 
         return self._success(message="Task deleted successfully.")
+
+
+class AdminTaskCommentsView(ResponseMixin, APIView):
+    """
+    GET /dashboard/admin/tasks/<pk>/comments/
+    Returns all comments for a specific task.
+    Access: Admin (any task) or Project Manager (only tasks in their projects).
+    """
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def _is_authorised(self, user):
+        return user.is_staff or user.groups.filter(name="Project Manager").exists()
+
+    def _get_task(self, pk, user):
+        try:
+            task = TaskModel.objects.select_related("project").get(pk=pk)
+        except TaskModel.DoesNotExist:
+            return None, "not_found"
+
+        if user.is_staff:
+            return task, None
+
+        project_ids = list(
+            ProjectsModel.objects.filter(
+                Q(created_by=user) | Q(members__project_member=user)
+            )
+            .distinct()
+            .values_list("id", flat=True)
+        )
+        if task.project.pk not in project_ids:
+            return None, "forbidden"
+
+        return task, None
+
+    @extend_schema(responses=AdminTaskCommentSerializer(many=True))
+    def get(self, request, pk):
+        user = request.user
+        if not self._is_authorised(user):
+            return self._error(
+                "FORBIDDEN",
+                "Admin or Project Manager access required.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        task, err = self._get_task(pk, user)
+        if err == "not_found":
+            return self._error(
+                "NOT_FOUND",
+                "Task not found.",
+                status_code=status.HTTP_404_NOT_FOUND,
+            )
+        if err == "forbidden":
+            return self._error(
+                "FORBIDDEN",
+                "You do not have access to this task.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        comments = (
+            CommentModel.objects.filter(task=task)
+            .select_related("author", "author__profile")
+            .order_by("-created_at")
+        )
+
+        serializer = AdminTaskCommentSerializer(
+            comments, many=True, context={"request": request}
+        )
+        return self._success(data=serializer.data)

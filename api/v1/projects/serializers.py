@@ -91,17 +91,17 @@ class ProjectWriteSerializer(serializers.ModelSerializer):
 
 class ProjectListSerializer(ProjectProgressMixin, serializers.ModelSerializer):
     name = serializers.CharField(source="project_name", read_only=True)
-    startDate = serializers.DateField(source="start_date", read_only=True)
-    dueDate = serializers.DateField(source="end_date", read_only=True)
-    createdAt = serializers.DateField(source="created_at", read_only=True)
-    createdBy = serializers.IntegerField(source="created_by_id", read_only=True)
-    teamMembers = ProjectMemberSerializer(source="members", many=True, read_only=True)
+    start_date = serializers.DateField(read_only=True)
+    due_date = serializers.DateField(read_only=True)
+    created_at = serializers.DateField(read_only=True)
+    created_by = serializers.IntegerField(source="created_by_id", read_only=True)
+    team_members = ProjectMemberSerializer(source="members", many=True, read_only=True)
 
     # Computed/normalized fields
     status = serializers.SerializerMethodField()
     priority = serializers.SerializerMethodField()
-    totalTasks = serializers.SerializerMethodField()
-    tasksCompleted = serializers.SerializerMethodField()
+    total_tasks = serializers.SerializerMethodField()
+    tasks_completed = serializers.SerializerMethodField()
     progress = serializers.SerializerMethodField()
     tasks = serializers.SerializerMethodField()
 
@@ -111,17 +111,17 @@ class ProjectListSerializer(ProjectProgressMixin, serializers.ModelSerializer):
             "id",
             "name",
             "description",
-            "startDate",
-            "dueDate",
+            "start_date",
+            "due_date",
             "status",
             "priority",
             "progress",
-            "totalTasks",
-            "tasksCompleted",
-            "teamMembers",
+            "total_tasks",
+            "tasks_completed",
+            "team_members",
             "tasks",
-            "createdBy",
-            "createdAt",
+            "created_by",
+            "created_at",
         ]
 
     def _enum_to_value(self, value):
@@ -135,19 +135,19 @@ class ProjectListSerializer(ProjectProgressMixin, serializers.ModelSerializer):
     def get_priority(self, obj):
         return self._enum_to_value(obj.priority)
 
-    def get_totalTasks(self, obj):
+    def get_total_tasks(self, obj):
         annotated = getattr(obj, "total_tasks", None)
         return annotated if annotated is not None else obj.project_tasks.count()
 
-    def get_tasksCompleted(self, obj):
+    def get_tasks_completed(self, obj):
         annotated = getattr(obj, "completed_tasks", None)
         if annotated is not None:
             return annotated
         return obj.project_tasks.filter(status=StatusEnum.DONE).count()
 
     def get_progress(self, obj):
-        total_tasks = self.get_totalTasks(obj)
-        completed_tasks = self.get_tasksCompleted(obj)
+        total_tasks = self.get_total_tasks(obj)
+        completed_tasks = self.get_tasks_completed(obj)
         return round((completed_tasks / total_tasks) * 100) if total_tasks else 0
 
     def get_tasks(self, obj):
@@ -161,7 +161,7 @@ class ProjectListSerializer(ProjectProgressMixin, serializers.ModelSerializer):
                 "title": t.title,
                 "status": self._enum_to_value(t.status),
                 "priority": self._enum_to_value(t.priority),
-                "dueDate": t.due_date,
+                "due_date": t.due_date,
             }
             for t in task_rows
         ]
