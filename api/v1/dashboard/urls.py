@@ -14,6 +14,7 @@ from .views.admin_tasks_views import (
     AdminTaskCommentsView,
 )
 from .views.admin_audit_views import AdminAuditLogsView
+from .views.admin_analytics_views import AdminAnalyticsView
 
 
 urlpatterns = [
@@ -43,5 +44,6 @@ urlpatterns = [
         AdminTaskCommentsView.as_view(),
         name="admin-task-comments",
     ),
+    path("admin/analytics/", AdminAnalyticsView.as_view(), name="admin-analytics"),
     path("admin/audit-logs/", AdminAuditLogsView.as_view(), name="admin-audit-logs"),
 ]

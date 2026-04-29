@@ -417,3 +417,57 @@ class AdminTaskLogsResponseSerializer(serializers.Serializer):
     task_title = serializers.CharField()
     logs = AdminTaskLogSerializer(many=True)
     total_count = serializers.IntegerField()
+
+
+# Admin Analytics
+class AnalyticsStatSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    value = serializers.CharField()
+    change = serializers.CharField()
+    positive = serializers.BooleanField()
+
+
+class TasksByStatusSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    value = serializers.IntegerField()
+
+
+class TasksByPrioritySerializer(serializers.Serializer):
+    name = serializers.CharField()
+    value = serializers.IntegerField()
+
+
+class WeeklyTaskProgressSerializer(serializers.Serializer):
+    week = serializers.CharField()
+    completed = serializers.IntegerField()
+    pending = serializers.IntegerField()
+
+
+class MostActiveUserSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    created = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    avatar = serializers.CharField(allow_null=True)
+
+
+class UsersWithMostAssignmentsSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    tasks = serializers.IntegerField()
+    avatar = serializers.CharField(allow_null=True)
+
+
+class ProjectsByTeamSizeSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    members = serializers.IntegerField()
+
+
+class AdminAnalyticsResponseSerializer(serializers.Serializer):
+    analytics_stats = AnalyticsStatSerializer(many=True)
+    tasks_by_status = TasksByStatusSerializer(many=True)
+    tasks_by_priority = TasksByPrioritySerializer(many=True)
+    weekly_task_progress = WeeklyTaskProgressSerializer(many=True)
+    most_active_users = MostActiveUserSerializer(many=True)
+    users_with_most_assignments = UsersWithMostAssignmentsSerializer(many=True)
+    projects_by_teamSize = ProjectsByTeamSizeSerializer(many=True)
