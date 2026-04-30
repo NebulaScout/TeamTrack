@@ -470,4 +470,4 @@ class AdminAnalyticsResponseSerializer(serializers.Serializer):
     weekly_task_progress = WeeklyTaskProgressSerializer(many=True)
     most_active_users = MostActiveUserSerializer(many=True)
     users_with_most_assignments = UsersWithMostAssignmentsSerializer(many=True)
-    projects_by_teamSize = ProjectsByTeamSizeSerializer(many=True)
+    projects_by_team_size = ProjectsByTeamSizeSerializer(many=True)

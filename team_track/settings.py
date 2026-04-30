@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 from django.urls import reverse_lazy
 from datetime import timedelta
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,10 +39,20 @@ BASE_URL = env("BASE_URL")
 ALLOWED_HOSTS = (
     env.list("ALLOWED_HOSTS")
     if "ALLOWED_HOSTS" in os.environ
-    else ["127.0.0.1", "localhost"]
+    else [
+        "127.0.0.1",
+        "localhost",
+    ]
 )
 CSRF_TRUSTED_ORIGINS = (
     env.list("CSRF_TRUSTED_ORIGINS") if "CSRF_TRUSTED_ORIGINS" in os.environ else []
+)
+
+#  Configure allowed origins
+CORS_ALLOWED_ORIGINS = (
+    env.list("CORS_ALLOWED_ORIGINS")
+    if "CORS_ALLOWED_ORIGINS" in os.environ
+    else ["http://localhost:5173"]
 )
 
 # CSRF_COOKIE_SECURE = True # Ensure CSRF cookie is only sent over HTTPS
@@ -96,8 +107,6 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-#  Configure allowed origins
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173"]  # react-vite front-end
 
 ROOT_URLCONF = "team_track.urls"
 
@@ -122,18 +131,26 @@ WSGI_APPLICATION = "team_track.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": env("DB_NAME"),
+#         "USER": env("DB_USER"),
+#         "PASSWORD": env("DB_PASSWORD"),
+#         "HOST": env("DB_HOST"),
+#         "PORT": env("DB_PORT"),
+#     }
+# }
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME"),
-        "USER": env("DB_USER"),
-        "PASSWORD": env("DB_PASSWORD"),
-        "HOST": env("DB_HOST"),
-        "PORT": env("DB_PORT"),
-    }
+    "default": dj_database_url.config(
+        default=env("DATABASE_URL", default=""),  # type: ignore
+        conn_max_age=600,
+        ssl_require=True,
+    )
 }
 
-DATABASE_URL = f"postgresql://{DATABASES['default']['USER']}:{DATABASES['default']['PASSWORD']}@{DATABASES['default']['HOST']}:{DATABASES['default']['PORT']}/{DATABASES['default']['NAME']}"
+# DATABASE_URL = f"postgresql://{DATABASES['default']['USER']}:{DATABASES['default']['PASSWORD']}@{DATABASES['default']['HOST']}:{DATABASES['default']['PORT']}/{DATABASES['default']['NAME']}"
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

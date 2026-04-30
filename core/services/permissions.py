@@ -10,6 +10,7 @@ class IsAdminDashboardUser(permissions.BasePermission):
     - superusers
     - staff users
     - users in Admin group
+    - users in Project Manager group
     """
 
     def has_permission(self, request, view):  # type: ignore
@@ -20,6 +21,7 @@ class IsAdminDashboardUser(permissions.BasePermission):
             user.is_superuser
             or user.is_staff
             or user.groups.filter(name="Admin").exists()
+            or user.groups.filter(name="Project Manager").exists()
         )
 
 

@@ -64,6 +64,23 @@ class AdminAnalyticsView(ResponseMixin, APIView):
                 pass
         return "Unknown"
 
+    def _is_admin_user(self, user: User) -> bool:
+        return (
+            user.is_superuser
+            or user.is_staff
+            or user.groups.filter(name="Admin").exists()
+        )
+
+    def _is_project_manager(self, user: User) -> bool:
+        return user.groups.filter(name="Project Manager").exists()
+
+    def _projects_queryset(self, user: User):
+        if self._is_admin_user(user):
+            return ProjectsModel.objects.all()
+        if self._is_project_manager(user):
+            return ProjectsModel.objects.filter(created_by=user)
+        return ProjectsModel.objects.none()
+
     @extend_schema(responses=AdminAnalyticsResponseSerializer)
     def get(self, request):
         window_days = self._window_days(request)
@@ -75,20 +92,24 @@ class AdminAnalyticsView(ResponseMixin, APIView):
         prev_start = window_start - timedelta(days=window_days)
         prev_end = window_start
 
-        total_current = TaskModel.objects.filter(
+        projects_qs = self._projects_queryset(request.user)
+        tasks_qs = TaskModel.objects.filter(project__in=projects_qs)
+        history_qs = TaskHistoryModel.objects.filter(task__project__in=projects_qs)
+
+        total_current = tasks_qs.filter(
             created_at__gte=window_start, created_at__lt=now
         ).count()
-        total_prev = TaskModel.objects.filter(
+        total_prev = tasks_qs.filter(
             created_at__gte=prev_start, created_at__lt=prev_end
         ).count()
 
-        completed_current = TaskHistoryModel.objects.filter(
+        completed_current = history_qs.filter(
             field_changed="status",
             new_value=StatusEnum.DONE,
             timestamp__gte=window_start,
             timestamp__lt=now,
         ).count()
-        completed_prev = TaskHistoryModel.objects.filter(
+        completed_prev = history_qs.filter(
             field_changed="status",
             new_value=StatusEnum.DONE,
             timestamp__gte=prev_start,
@@ -96,22 +117,20 @@ class AdminAnalyticsView(ResponseMixin, APIView):
         ).count()
 
         overdue_current = (
-            TaskModel.objects.filter(due_date__lt=today)
-            .exclude(status=StatusEnum.DONE)
-            .count()
+            tasks_qs.filter(due_date__lt=today).exclude(status=StatusEnum.DONE).count()
         )
         overdue_prev = (
-            TaskModel.objects.filter(due_date__lt=(today - timedelta(days=window_days)))
+            tasks_qs.filter(due_date__lt=(today - timedelta(days=window_days)))
             .exclude(status=StatusEnum.DONE)
             .count()
         )
 
-        active_current = ProjectsModel.objects.filter(
+        active_current = projects_qs.filter(
             status=ProjectStatusEnum.ACTIVE,
             updated_at__gte=window_start,
             updated_at__lt=now,
         ).count()
-        active_prev = ProjectsModel.objects.filter(
+        active_prev = projects_qs.filter(
             status=ProjectStatusEnum.ACTIVE,
             updated_at__gte=prev_start,
             updated_at__lt=prev_end,
@@ -155,9 +174,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             }
         )
 
-        status_counts = (
-            TaskModel.objects.values("status").annotate(value=Count("id")).order_by()
-        )
+        status_counts = tasks_qs.values("status").annotate(value=Count("id")).order_by()
         status_map = {row["status"]: row["value"] for row in status_counts}
         tasks_by_status = []
         for status in StatusEnum:
@@ -169,7 +186,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             )
 
         priority_counts = (
-            TaskModel.objects.filter(priority__isnull=False)
+            tasks_qs.filter(priority__isnull=False)
             .values("priority")
             .annotate(value=Count("id"))
             .order_by()
@@ -190,7 +207,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             week_end = now - timedelta(days=7 * (weeks_count - 1 - idx))
             week_start = week_end - timedelta(days=7)
 
-            completed = TaskHistoryModel.objects.filter(
+            completed = history_qs.filter(
                 field_changed="status",
                 new_value=StatusEnum.DONE,
                 timestamp__gte=week_start,
@@ -198,7 +215,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             ).count()
 
             pending = (
-                TaskModel.objects.filter(
+                tasks_qs.filter(
                     created_at__gte=week_start,
                     created_at__lt=week_end,
                 )
@@ -216,7 +233,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
 
         top_n = 5
         created_rows = (
-            TaskModel.objects.filter(
+            tasks_qs.filter(
                 created_at__gte=window_start,
                 created_at__lt=now,
                 created_by__isnull=False,
@@ -227,7 +244,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
         created_map = {row["created_by"]: row["created"] for row in created_rows}
 
         completed_rows = (
-            TaskHistoryModel.objects.filter(
+            history_qs.filter(
                 field_changed="status",
                 new_value=StatusEnum.DONE,
                 timestamp__gte=window_start,
@@ -276,7 +293,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             )
 
         assignments = (
-            TaskModel.objects.filter(
+            tasks_qs.filter(
                 assigned_to__isnull=False,
                 created_at__gte=window_start,
                 created_at__lt=now,
@@ -308,7 +325,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             )
 
         projects = (
-            ProjectsModel.objects.annotate(members_count=Count("members"))
+            projects_qs.annotate(members_count=Count("members"))
             .order_by("-members_count")
             .values("project_name", "members_count")[:top_n]
         )
@@ -324,7 +341,7 @@ class AdminAnalyticsView(ResponseMixin, APIView):
             "weekly_task_progress": weekly_progress,
             "most_active_users": most_active_users,
             "users_with_most_assignments": users_with_most_assignments,
-            "projects_by_teamSize": projects_by_team_size,
+            "projects_by_team_size": projects_by_team_size,
         }
 
         serializer = AdminAnalyticsResponseSerializer(payload)
