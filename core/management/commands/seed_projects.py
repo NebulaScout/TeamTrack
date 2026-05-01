@@ -6,12 +6,14 @@ import random
 from django.contrib.auth.models import User, Group
 from projects.models import ProjectsModel, ProjectMembers
 from core.services.roles import ROLE_PERMISSIONS
+from core.services.seed_registry import get_active_seed_run, record_seeded
 
 
 class Command(BaseCommand):
     help = "Seed database with fake project data"
 
     def handle(self, *args, **options):
+        seed_run = get_active_seed_run()
         fake = Faker()
 
         # Get all users to assign as creators and members
@@ -124,6 +126,7 @@ class Command(BaseCommand):
             )
 
             created_count += 1
+            record_seeded(seed_run, project)
             self.stdout.write(self.style.SUCCESS(f"Created project: {project_name}"))
 
             # Add project members (3-8 members per project)
@@ -137,11 +140,12 @@ class Command(BaseCommand):
             roles = list(ROLE_PERMISSIONS.keys())
 
             # Always add the creator as Admin
-            ProjectMembers.objects.get_or_create(
+            member, _ = ProjectMembers.objects.get_or_create(
                 project=project,
                 project_member=creator,
                 defaults={"role_in_project": "Admin"},
             )
+            record_seeded(seed_run, member)
 
             # Add other members with various roles
             for member in selected_members:
@@ -168,6 +172,7 @@ class Command(BaseCommand):
                 self.stdout.write(
                     self.style.NOTICE(f"  Added member: {member.username} as {role}")
                 )
+                record_seeded(seed_run, member)
 
             self.stdout.write(
                 self.style.SUCCESS(f"\nSuccessfully created {created_count} projects")

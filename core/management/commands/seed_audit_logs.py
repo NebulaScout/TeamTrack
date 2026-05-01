@@ -19,6 +19,7 @@ from core.services.enums import (
 )
 from projects.models import ProjectMembers, ProjectsModel
 from tasks.models import CommentModel, TaskHistoryModel, TaskModel
+from core.services.seed_registry import get_active_seed_run, record_seeded
 
 
 class Command(BaseCommand):
@@ -44,6 +45,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        seed_run = get_active_seed_run()
         fake = Faker()
         target_entries = max(1, options["entries"])
         days_back = max(1, options["days"])
@@ -165,6 +167,7 @@ class Command(BaseCommand):
                         users=users,
                         members_by_project=members_by_project,
                         occurred_at=occurred_at,
+                        seed_run=seed_run,
                     )
                     if ok:
                         created["task_updates"] += 1
@@ -174,7 +177,7 @@ class Command(BaseCommand):
                 elif event == "task_create":
                     task = random.choice(tasks)
                     actor = self._pick_actor(task.project.pk, members_by_project, users)
-                    AuditService.created(
+                    audit_log = AuditService.created(
                         module=AuditModule.TASK,
                         actor=actor,
                         target=task,
@@ -195,13 +198,14 @@ class Command(BaseCommand):
                         },
                         occurred_at=occurred_at.isoformat(),
                     )
+                    record_seeded(seed_run, audit_log)
                     created["task_created"] += 1
                     created["global_logs"] += 1
 
                 elif event == "task_delete":
                     task = random.choice(tasks)
                     actor = self._pick_actor(task.project.pk, members_by_project, users)
-                    AuditService.deleted(
+                    audit_log = AuditService.deleted(
                         module=AuditModule.TASK,
                         actor=actor,
                         target_type=TaskModel.__name__,
@@ -218,6 +222,7 @@ class Command(BaseCommand):
                         },
                         occurred_at=occurred_at.isoformat(),
                     )
+                    record_seeded(seed_run, audit_log)
                     created["task_deleted"] += 1
                     created["global_logs"] += 1
 
@@ -232,7 +237,7 @@ class Command(BaseCommand):
                     )
                     project = comment.task.project if comment.task else None
                     task = comment.task
-                    AuditService.created(
+                    audit_log = AuditService.created(
                         module=AuditModule.COMMENT,
                         actor=actor,
                         target=comment,
@@ -252,6 +257,7 @@ class Command(BaseCommand):
                         },
                         occurred_at=occurred_at.isoformat(),
                     )
+                    record_seeded(seed_run, audit_log)
                     created["comment_created"] += 1
                     created["global_logs"] += 1
 
@@ -281,7 +287,7 @@ class Command(BaseCommand):
                         before = (project.description or "")[:120]
                         after = fake.paragraph(nb_sentences=2)[:220]
 
-                    AuditService.updated(
+                    audit_log = AuditService.updated(
                         module=AuditModule.PROJECT,
                         actor=actor,
                         target=project,
@@ -294,12 +300,13 @@ class Command(BaseCommand):
                         },
                         occurred_at=occurred_at.isoformat(),
                     )
+                    record_seeded(seed_run, audit_log)
                     created["project_updated"] += 1
                     created["global_logs"] += 1
 
                 elif event == "user_registered":
                     target_user = random.choice(users)
-                    AuditService.registered(
+                    audit_log = AuditService.registered(
                         actor=target_user,
                         target=target_user,
                         description=f'User "{target_user.username}" registered',
@@ -312,6 +319,7 @@ class Command(BaseCommand):
                         },
                         occurred_at=occurred_at.isoformat(),
                     )
+                    record_seeded(seed_run, audit_log)
                     created["user_registered"] += 1
                     created["global_logs"] += 1
 
@@ -331,6 +339,7 @@ class Command(BaseCommand):
                 users=users,
                 members_by_project=members_by_project,
                 created=created,
+                seed_run=seed_run,
             )
 
         self.stdout.write("\n" + "=" * 64)
@@ -391,6 +400,7 @@ class Command(BaseCommand):
         users,
         members_by_project,
         occurred_at,
+        seed_run,
     ):
         if not task:
             return False
@@ -483,7 +493,7 @@ class Command(BaseCommand):
             return False
 
         # Keep TaskHistory in sync with task audit metadata.
-        TaskHistoryModel.objects.create(
+        history = TaskHistoryModel.objects.create(
             task=task,
             changed_by=actor,
             field_changed=field_enum,
@@ -491,6 +501,7 @@ class Command(BaseCommand):
             new_value=new_value,
             timestamp=occurred_at,
         )
+        record_seeded(seed_run, history)
 
         current[field_enum.value] = new_value
 
@@ -498,7 +509,7 @@ class Command(BaseCommand):
             field_enum == TaskFieldEnum.STATUS and str(new_value).upper() == "DONE"
         )
 
-        AuditService.updated(
+        audit_log = AuditService.updated(
             module=AuditModule.TASK,
             actor=actor,
             target=task,
@@ -522,6 +533,7 @@ class Command(BaseCommand):
             },
             occurred_at=occurred_at,
         )
+        record_seeded(seed_run, audit_log)
         return True
 
     def _seed_busy_bursts(
@@ -534,6 +546,7 @@ class Command(BaseCommand):
         users,
         members_by_project,
         created,
+        seed_run,
     ):
         bursts = random.randint(3, 5)
         for _ in range(bursts):
@@ -555,6 +568,7 @@ class Command(BaseCommand):
                     users=users,
                     members_by_project=members_by_project,
                     occurred_at=occurred_at,
+                    seed_run=seed_run,
                 )
                 if ok:
                     created["task_updates"] += 1

@@ -8,12 +8,14 @@ from django.utils import timezone
 from projects.models import ProjectsModel, ProjectMembers
 from tasks.models import TaskModel, CommentModel, TaskHistoryModel, TaskAssignment
 from core.services.enums import StatusEnum, PriorityEnum, TaskFieldEnum
+from core.services.seed_registry import get_active_seed_run, record_seeded
 
 
 class Command(BaseCommand):
     help = "Seed database with fake task data"
 
     def handle(self, *args, **options):
+        seed_run = get_active_seed_run()
         fake = Faker()
 
         # Get all projects
@@ -237,16 +239,18 @@ class Command(BaseCommand):
                     due_date=due_date,
                     created_by=creator,
                 )
+                record_seeded(seed_run, task)
 
                 total_tasks_created += 1
                 self.stdout.write(self.style.SUCCESS(f"\tCreated task: {task_title}"))
 
                 # Create TaskAssignment records (can have multiple assignees)
                 if assigned_to:
-                    TaskAssignment.objects.get_or_create(
+                    assignment, _ = TaskAssignment.objects.get_or_create(
                         task=task,
                         user=assigned_to,
                     )
+                    record_seeded(seed_run, assignment)
                     total_assignment_created += 1
 
                     # Sometimes add additional assignees (for collaborative tasks)
@@ -257,10 +261,11 @@ class Command(BaseCommand):
                         )
 
                         for extra_user in additional_assignees:
-                            TaskAssignment.objects.get_or_create(
+                            assignment, _ = TaskAssignment.objects.get_or_create(
                                 task=task,
                                 user=extra_user,
                             )
+                            record_seeded(seed_run, assignment)
                             total_assignment_created += 1
 
                 # Create comments (0 - 9 per task)
@@ -271,11 +276,12 @@ class Command(BaseCommand):
                         blocker=random.choice(task_subjects),
                     )
 
-                    CommentModel.objects.create(
+                    comment = CommentModel.objects.create(
                         task=task,
                         author=random.choice(member_users),
                         content=comment_content,
                     )
+                    record_seeded(seed_run, comment)
                     total_comments_created += 1
 
                     # create task history (0 - 4 entries per task to simulate changes)
@@ -325,7 +331,7 @@ class Command(BaseCommand):
                             old_value = fake.sentence()
                             new_value = fake.sentence()
 
-                        TaskHistoryModel.objects.create(
+                        history = TaskHistoryModel.objects.create(
                             task=task,
                             changed_by=changed_by,
                             field_changed=field_changed,
@@ -337,6 +343,7 @@ class Command(BaseCommand):
                                 tzinfo=timezone.get_current_timezone(),
                             ),
                         )
+                        record_seeded(seed_run, history)
                         total_history_created += 1
 
         # summary

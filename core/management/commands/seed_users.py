@@ -4,12 +4,14 @@ import random
 
 from django.contrib.auth.models import User, Group
 from accounts.models import UserProfile
+from core.services.seed_registry import get_active_seed_run, record_seeded
 
 
 class Command(BaseCommand):
     help = "Seed the database with fake user data"
 
     def handle(self, *args, **options):
+        seed_run = get_active_seed_run()
         fake = Faker()
 
         # Determine role counts
@@ -50,6 +52,8 @@ class Command(BaseCommand):
                 )
 
                 created_count += 1
+                record_seeded(seed_run, user, profile)
+
                 self.stdout.write(self.style.SUCCESS(f"Created {role}: {username}"))
 
         self.stdout.write(

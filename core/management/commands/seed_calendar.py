@@ -19,12 +19,14 @@ from core.services.enums import (
     StatusEnum,
     RecurrenceEnums,
 )
+from core.services.seed_registry import get_active_seed_run, record_seeded
 
 
 class Command(BaseCommand):
     help = "Seed database with fake calendar data"
 
     def handle(self, *args, **options):
+        seed_run = get_active_seed_run()
         fake = Faker()
 
         # Get all projects
@@ -171,6 +173,7 @@ class Command(BaseCommand):
                     created_by=creator,
                 )
 
+                record_seeded(seed_run, milestone)
                 total_milestones_created += 1
                 self.stdout.write(
                     self.style.SUCCESS(
@@ -304,6 +307,7 @@ class Command(BaseCommand):
                     reminder_minutes_before=reminder_minutes,
                 )
 
+                record_seeded(seed_run, event)
                 total_events_created += 1
 
             self.stdout.write(
@@ -325,6 +329,8 @@ class Command(BaseCommand):
                 )
                 # Trigger the sync to create calendar events
                 sync.sync_to_calendar()
+
+                record_seeded(seed_run, sync)
                 total_syncs_created += 1
 
         self.stdout.write(
@@ -361,6 +367,7 @@ class Command(BaseCommand):
                 filtered_projects = random.sample(user_projects, num_filtered)
                 calendar_view.filtered_projects.set(filtered_projects)
 
+            record_seeded(seed_run, calendar_view)
             total_views_created += 1
             self.stdout.write(
                 self.style.SUCCESS(
