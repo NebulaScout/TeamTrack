@@ -143,6 +143,20 @@ TeamTrack/
 └── utils/             # Utility functions
 ```
 
+## Documentation
+
+Project documentation is centralized under docs/:
+
+- docs/README.md - Documentation index and navigation
+- docs/getting-started.md - Setup and environment
+- docs/architecture.md - High-level architecture and patterns
+- docs/api-reference.md - API overview and OpenAPI source
+- docs/auth-permissions.md - Auth flow and permissions
+- docs/domain/ - Domain-specific docs
+- docs/admin-analytics.md - Admin dashboard and analytics
+- docs/audit-logging.md - Audit logging and history
+- docs/management-commands.md - Custom management commands
+
 ## API Endpoints
 
 ### Authentication

@@ -15,7 +15,7 @@ class Command(BaseCommand):
         fake = Faker()
 
         # Determine role counts
-        roles = {"Admin": 0, "Project Manager": 1, "Developer": 1, "Guest": 0}
+        roles = {"Admin": 10, "Project Manager": 15, "Developer": 21, "Guest": 8}
 
         created_count = 0
 
