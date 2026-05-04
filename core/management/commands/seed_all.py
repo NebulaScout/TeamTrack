@@ -11,13 +11,35 @@ class Command(BaseCommand):
 
     SEED_NAME = "initial_seed_v1"
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Allow rerunning by creating a new seed run record.",
+        )
+        parser.add_argument(
+            "--run-id",
+            dest="run_id",
+            help="Optional seed run name override.",
+        )
+
     def handle(self, *args, **options):
+        run_id = options.get("run_id") or os.getenv("SEED_RUN_NAME")
+        seed_name = run_id or self.SEED_NAME
+
         try:
             with transaction.atomic():
-                seed_run = SeedRun.objects.create(name=self.SEED_NAME, status="running")
+                seed_run = SeedRun.objects.create(name=seed_name, status="running")
         except IntegrityError:
-            self.stdout.write(self.style.WARNING("Seed already ran. Skipping."))
-            return
+            if not options.get("force"):
+                self.stdout.write(self.style.WARNING("Seed already ran. Skipping."))
+                return
+
+            # Create a unique run name for reruns.
+            suffix = timezone.now().strftime("%Y%m%d%H%M%S")
+            seed_name = f"{seed_name}_{suffix}"
+            with transaction.atomic():
+                seed_run = SeedRun.objects.create(name=seed_name, status="running")
 
         seed_commands = [
             "init_roles",
@@ -31,7 +53,7 @@ class Command(BaseCommand):
             "generate_profiles",
         ]
 
-        os.environ["SEED_RUN_NAME"] = self.SEED_NAME
+        os.environ["SEED_RUN_NAME"] = seed_name
 
         try:
             for cmd in seed_commands:

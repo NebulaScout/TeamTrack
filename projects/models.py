@@ -11,8 +11,8 @@ class ProjectsModel(models.Model):
     project_name = models.CharField(max_length=100, blank=False, unique=True)
     description = models.TextField(null=True, blank=True)
     start_date = models.DateField(default=timezone.now, blank=False)
-    status = EnumField(ProjectStatusEnum)
-    priority = EnumField(PriorityEnum)
+    status = EnumField(ProjectStatusEnum, default=ProjectStatusEnum.ACTIVE)
+    priority = EnumField(PriorityEnum, default=PriorityEnum.MEDIUM)
     end_date = models.DateField()  # TODO: add validation where start_date > end_date
     created_by = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name="projects"
