@@ -75,3 +75,13 @@ class AuditAction(models.TextChoices):
     UPDATED = "updated", "Updated"
     DELETED = "deleted", "Deleted"
     REGISTERED = "registered", "Registered"
+
+
+class NotificationCategory(models.TextChoices):
+    TASK = "TASK", "Task"
+    PROJECT = "PROJECT", "Project"
+    COMMENT = "COMMENT", "Comment"
+    USER = "USER", "User"
+    SYSTEM = "SYSTEM", "System"
+    REMINDER = "REMINDER", "Reminder"
+    DEADLINE = "DEADLINE", "Deadline"

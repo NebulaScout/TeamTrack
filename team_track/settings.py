@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "tasks.apps.TasksConfig",
     "Calendar.apps.CalendarConfig",
     "audit.apps.AuditConfig",
+    "notifications.apps.NotificationsConfig",
 ]
 
 MIDDLEWARE = [
