@@ -7,5 +7,6 @@ urlpatterns = [
     path("tasks/", include("api.v1.tasks.urls")),
     path("calendar/", include("api.v1.Calendar.urls")),
     path("dashboard/", include("api.v1.dashboard.urls")),
+    path("notifications/", include("api.v1.notifications.urls")),
     # path("common/", include('api.v1.common.urls))
 ]
