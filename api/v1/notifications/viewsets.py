@@ -6,13 +6,14 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from notifications.models import Notification, NotificationPreference
+from core.services.permissions import NotificationPermissions
 from typing import cast
 from .serializers import NotificationSerializer, NotificationPreferenceSerializer
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [NotificationPermissions]
     serializer_class = NotificationSerializer
 
     def get_queryset(self):  # type: ignore
@@ -54,7 +55,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
 
 class NotificationPreferenceViewSet(viewsets.ModelViewSet):
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [NotificationPermissions]
     serializer_class = NotificationPreferenceSerializer
 
     def get_queryset(self):  # type: ignore

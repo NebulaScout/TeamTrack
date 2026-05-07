@@ -335,3 +335,46 @@ class CalendarEventPermissions(permissions.BasePermission):
             required_permissions in ROLE_PERMISSIONS.get(group, [])
             for group in user_groups
         )
+
+
+class NotificationPermissions(permissions.BasePermission):
+    """Permissions for notification endpoints"""
+
+    def has_permission(self, request, view):  # type: ignore
+        if not request.user.is_authenticated:
+            return False
+
+        user_groups = request.user.groups.values_list("name", flat=True)
+
+        permissions_map = {
+            # NotificationViewSet
+            "list": "view_notification",
+            "retrieve": "view_notification",
+            "mark_read": "change_notification",
+            "mark_unread": "change_notification",
+            "mark_all_read": "change_notification",
+            "unread_count": "view_notification",
+            # NotificationPreferenceViewSet
+            "update": "change_notificationpreference",
+            "partial_update": "change_notificationpreference",
+        }
+
+        required_permission = permissions_map.get(view.action)
+        if not required_permission:
+            return False
+
+        return any(
+            required_permission in ROLE_PERMISSIONS.get(group, [])
+            for group in user_groups
+        )
+
+    def has_object_permission(self, request, view, obj):  # type: ignore
+        # Notifications are only accessible by their recipient.
+        if hasattr(obj, "recipient_id"):
+            return obj.recipient_id == request.user.id
+
+        # Preferences are only accessible by their owner.
+        if hasattr(obj, "user_id"):
+            return obj.user_id == request.user.id
+
+        return False

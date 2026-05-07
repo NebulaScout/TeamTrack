@@ -42,6 +42,10 @@ ROLE_PERMISSIONS = {
         "change_calendarevent",
         "view_calendarevent",
         "delete_calendarevent",
+        "view_notification",
+        "change_notification",
+        "view_notificationpreference",
+        "change_notificationpreference",
     ],
     "Project Manager": [
         # project_model_permissions
@@ -82,6 +86,10 @@ ROLE_PERMISSIONS = {
         "change_calendarevent",
         "view_calendarevent",
         "delete_calendarevent",
+        "view_notification",
+        "change_notification",
+        "view_notificationpreference",
+        "change_notificationpreference",
     ],
     "Developer": [
         # project_model_permissions
@@ -106,6 +114,10 @@ ROLE_PERMISSIONS = {
         "change_calendarevent",
         "view_calendarevent",
         "delete_calendarevent",
+        "view_notification",
+        "change_notification",
+        "view_notificationpreference",
+        "change_notificationpreference",
     ],
     "Guest": [
         # project_model_permissions
@@ -123,6 +135,10 @@ ROLE_PERMISSIONS = {
         "add_commentmodel",
         # Calendar event permissions
         "view_calendarevent",
+        "view_notification",
+        "change_notification",
+        "view_notificationpreference",
+        "change_notificationpreference",
     ],
 }
 
