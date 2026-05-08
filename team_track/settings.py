@@ -32,7 +32,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env.bool("DEBUG") if "DEBUG" in os.environ else False
+DEBUG = env.bool("DEBUG", default=False)  # type: ignore
 
 BASE_URL = env("BASE_URL")
 # ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
@@ -55,18 +55,37 @@ CORS_ALLOWED_ORIGINS = (
     else ["http://localhost:5173"]
 )
 
-# CSRF_COOKIE_SECURE = True # Ensure CSRF cookie is only sent over HTTPS
-# SESSION_COOKIE_SECURE = True # Ensure session cookie is only sent over HTTPS
-# SECURE_BROWSER_XSS_FILTER = True # Enable browser XSS filtering
-# SECURE_CONTENT_TYPE_NOSNIFF = True # Prevent MIME type sniffing
-# X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
-# SECURE_SSL_REDIRECT = True # Redirect all HTTP requests to HTTPS
-# SECURE_HSTS_SECONDS = 31536000  # Enforce HTTPS for one year
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_HSTS_PRELOAD = True
-# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # For Apache proxy
-# SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-# SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+# Configure CORS settings
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+if DEBUG:
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    SECURE_SSL_REDIRECT = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+else:
+    CSRF_COOKIE_SECURE = True  # Ensure CSRF cookie is only sent over HTTPS
+    SESSION_COOKIE_SECURE = True  # Ensure session cookie is only sent over HTTPS
+    SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS filtering
+    SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+    X_FRAME_OPTIONS = "DENY"  # Prevent clickjacking
+    SECURE_SSL_REDIRECT = True  # Redirect all HTTP requests to HTTPS
+    SECURE_HSTS_SECONDS = 31536000  # Enforce HTTPS for one year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # For Apache proxy
+    SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 
 # Application definition
