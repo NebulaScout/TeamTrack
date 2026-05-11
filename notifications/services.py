@@ -56,12 +56,18 @@ class NotificationService:
         recipients: set[int] = set()
         metadata = audit_log.metadata or {}
 
+        def _project_member_ids(project_id: int) -> set[int]:
+            return set(
+                ProjectMembers.objects.filter(project_id=project_id).values_list(
+                    "project_member_id", flat=True
+                )
+            )
+
+        project_id = getattr(audit_log, "project_id", None)
+
         # Project-scoped: all members of the project
-        if audit_log.project.pk if audit_log.project else None:
-            member_ids = ProjectMembers.objects.filter(
-                project_id=audit_log.project.pk if audit_log.project else None
-            ).values_list("project_member_id", flat=True)
-            recipients.update(member_ids)
+        if project_id:
+            recipients.update(_project_member_ids(project_id))
 
         # Task-specific: assigned user and creator
         if str(audit_log.module) == AuditModule.TASK:
@@ -87,6 +93,10 @@ class NotificationService:
                 if task_assigned_to_id:
                     recipients.add(task_assigned_to_id)
 
+                # If audit log didn't include project, derive it from task
+                if not project_id and task and getattr(task, "project_id", None):
+                    project_id = task.project.pk
+
         # Comment-specific: notify task creator and assignee
         if str(audit_log.module) == AuditModule.COMMENT:
             task_id = metadata.get("task_id")
@@ -107,10 +117,17 @@ class NotificationService:
                 if task_assigned_to_id:
                     recipients.add(task_assigned_to_id)
 
+                if not project_id and task and getattr(task, "project_id", None):
+                    project_id = task.project.pk
+
         # User-specific: notify the target user (e.g., registered)
         if str(audit_log.module) == AuditModule.USER:
             if audit_log.target_id:
                 recipients.add(int(audit_log.target_id))
+
+        # Enforce project membership if project context exists
+        if project_id:
+            recipients &= _project_member_ids(project_id)
 
         # Avoid self notifications
         actor_id = getattr(audit_log, "actor_id", None)

@@ -24,6 +24,8 @@ from core.services.task_service import TaskService
 from api.v1.common.responses import ResponseMixin
 from core.services.enums import StatusEnum
 from tasks.models import TaskModel
+from core.services.audit_service import AuditService
+from core.services.enums import AuditModule
 
 
 class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
@@ -287,6 +289,25 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
             role_in_project=serializer.validated_data["role"],
         )
 
+        AuditService.updated(
+            module=AuditModule.PROJECT,
+            actor=request.user,
+            target=project,
+            project=project,
+            description=(
+                f'Added {user_to_invite.username} to project "{project.project_name}"'
+            ),
+            metadata={
+                "project_id": project.pk,
+                "project_name": project.project_name,
+                "member_id": user_to_invite.pk,
+                "member_username": user_to_invite.username,
+                "role": membership.role_in_project,
+                # Custom action type helps notifications/preferences distinguish this event.
+                "action_type": "project_member_added",
+            },
+        )
+
         # TODO: Configure to send email notifications
         # send_invitation_email(user_to_invite, project, request.user)
 
@@ -393,6 +414,24 @@ class ProjectsViewSet(ResponseMixin, viewsets.ModelViewSet):
             project=project,
             project_member=user_to_add,
             role_in_project=input_serializer.validated_data["role"],
+        )
+
+        AuditService.updated(
+            module=AuditModule.PROJECT,
+            actor=request.user,
+            target=project,
+            project=project,
+            description=(
+                f'Added {user_to_add.username} to project "{project.project_name}"'
+            ),
+            metadata={
+                "project_id": project.pk,
+                "project_name": project.project_name,
+                "member_id": user_to_add.pk,
+                "member_username": user_to_add.username,
+                "role": membership.role_in_project,
+                "action_type": "project_member_added",
+            },
         )
 
         output_serializer = ProjectMemberDetailSerializer(
