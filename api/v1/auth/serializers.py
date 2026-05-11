@@ -3,7 +3,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-
 User = get_user_model()
 
 
@@ -33,12 +32,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
                 {"username": ["Username or email is required."]}
             )
 
+        user = None
+
         if email and not username:
             try:
                 user = User.objects.get(email__iexact=email)
                 attrs[self.username_field] = user.get_username()
             except User.DoesNotExist:
                 raise AuthenticationFailed("Email does not exist")
+
+        if username and not user:
+            user = User.objects.filter(
+                **{f"{self.username_field}__iexact": username}
+            ).first()
+
+        if user and not user.is_active:
+            raise AuthenticationFailed("Account is deactivated.")
 
         try:
             return super().validate(attrs)

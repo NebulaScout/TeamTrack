@@ -90,10 +90,12 @@ class AuthViewSet(ResponseMixin, viewsets.ViewSet):
 
         try:
             serializer.is_valid(raise_exception=True)
-        except AuthenticationFailed:
+        except AuthenticationFailed as exc:
+            detail = exc.detail
+            message = detail if isinstance(detail, str) else detail[0]
             return self._error(
                 "AUTHENTICATION_FAILED",
-                "Invalid username/email or password",
+                message,
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
         except ValidationError as exc:
